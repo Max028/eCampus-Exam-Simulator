@@ -17,6 +17,6 @@ Panieri, voti e statistiche restano **solo nel browser** di chi usa la pagina (I
 
 ## Avvertenze
 
-- Strumento personale di studio, **non affiliato** con eCampus né con altri atenei.
+- **Progetto indipendente**: non è affiliato, approvato o collegato in alcun modo a eCampus né ad altre università. È stato realizzato con il solo scopo educativo e senza fini di lucro.
 - Le correzioni fatte da un chatbot possono contenere errori: ogni voto resta modificabile.
 - I panieri non sono inclusi nel repository: ognuno carica il proprio.

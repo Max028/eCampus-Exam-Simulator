@@ -34,6 +34,9 @@ body { background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
 .wrap { max-width: 860px; margin: 0 auto; }
+.sitefoot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); display: grid; gap: 6px; font-size: 0.8rem; color: var(--muted); }
+.sitefoot p { margin: 0; max-width: 75ch; }
+.sitefoot strong { color: var(--ink); }
 h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
 h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
 h2 { font-size: 1.25rem; font-weight: 700; }
@@ -296,6 +299,10 @@ section.blk { margin-top: 26px; scroll-margin-top: 16px; display: grid; gap: 16p
 </style>
 
 <div class="wrap" id="app"></div>
+<footer class="wrap sitefoot">
+  <p><strong>Progetto indipendente.</strong> Questo simulatore non è affiliato, approvato o collegato in alcun modo a eCampus né ad altre università. È stato realizzato con il solo scopo educativo, come strumento personale di studio, e senza fini di lucro.</p>
+  <p>Le correzioni fatte da un chatbot possono contenere errori: verifica sempre sul materiale del corso. I panieri caricati e i tuoi risultati restano solo in questo browser.</p>
+</footer>
 
 <script type="module">
 /* ========== PDF parsing ========== */
