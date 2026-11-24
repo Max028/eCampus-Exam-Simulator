@@ -20,3 +20,7 @@ Panieri, voti e statistiche restano **solo nel browser** di chi usa la pagina (I
 - **Progetto indipendente**: non è affiliato, approvato o collegato in alcun modo a eCampus né ad altre università. È stato realizzato con il solo scopo educativo e senza fini di lucro.
 - Le correzioni fatte da un chatbot possono contenere errori: ogni voto resta modificabile.
 - I panieri non sono inclusi nel repository: ognuno carica il proprio.
+
+## Licenza
+
+Codice distribuito con licenza [MIT](LICENSE): puoi usarlo, modificarlo e ridistribuirlo, mantenendo la nota di copyright. Il software è fornito «così com'è», senza garanzie.
