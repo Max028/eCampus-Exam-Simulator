@@ -311,7 +311,7 @@ section.blk { margin-top: 26px; scroll-margin-top: 16px; display: grid; gap: 16p
 <footer class="wrap sitefoot">
   <p><strong>Progetto indipendente.</strong> Questo simulatore non è affiliato, approvato o collegato in alcun modo a eCampus né ad altre università. È stato realizzato con il solo scopo educativo, come strumento personale di studio, e senza fini di lucro.</p>
   <p>Le correzioni fatte da un chatbot possono contenere errori: verifica sempre sul materiale del corso.</p>
-  <p><strong>Privacy.</strong> Il sito non usa cookie né strumenti di tracciamento e non raccoglie dati: panieri, risposte e risultati restano solo in questo browser. Caratteri e librerie sono serviti dal sito stesso, senza contattare altri server. Il sito è ospitato da GitHub Pages, che come ogni hosting registra i dati tecnici delle visite. Se copi una prova in Gemini o la fai correggere da Claude, quei contenuti vengono inviati al servizio che scegli, secondo le sue condizioni. Non inserire dati personali nelle risposte.</p>
+  <p><strong>Privacy.</strong> Il sito non usa cookie né strumenti di tracciamento e non raccoglie dati: panieri, risposte e risultati restano solo in questo browser. Nella versione su GitHub Pages caratteri e librerie sono serviti dal sito stesso, senza contattare altri server; GitHub, come ogni hosting, registra i dati tecnici delle visite. Se copi una prova in Gemini o la fai correggere da Claude, quei contenuti vengono inviati al servizio che scegli, secondo le sue condizioni. Non inserire dati personali nelle risposte.</p>
   <p>Codice con licenza MIT. Usa pdf.js (Apache 2.0) e i caratteri Public Sans, Source Serif 4, Bricolage Grotesque e JetBrains Mono (SIL Open Font License).</p>
 </footer>
 
@@ -400,9 +400,11 @@ function parsePaniere(pages) {
 }
 
 
-// pdf.js 4.10.38 (Apache-2.0) served from this site, see vendor/pdfjs
-const PDFJS = new URL("vendor/pdfjs/pdf.min.mjs", document.baseURI).href;
-const PDFJS_WORKER = new URL("vendor/pdfjs/pdf.worker.min.mjs", document.baseURI).href;
+// pdf.js 4.10.38 (Apache-2.0): served from this site (vendor/pdfjs) on a normal host such as GitHub Pages;
+// claude.ai cannot host the worker file, so there the same version comes from the CDN it allows.
+const PDFJS_BASE = window.claude ? "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/" : new URL("vendor/pdfjs/", document.baseURI).href;
+const PDFJS = PDFJS_BASE + "pdf.min.mjs";
+const PDFJS_WORKER = PDFJS_BASE + "pdf.worker.min.mjs";
 let pdfjsLib = null;
 async function loadPdfjs() {
   if (pdfjsLib) return pdfjsLib;
