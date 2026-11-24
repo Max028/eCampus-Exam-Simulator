@@ -2,6 +2,8 @@
 
 Simulatore per gli esami a risposta multipla e aperta a partire dal **paniere** del corso (il PDF delle domande fornito dall'ateneo). È una sola pagina HTML: si apre nel browser, senza installare nulla.
 
+**▶ [Prova il simulatore](https://max028.github.io/eCampus-Exam-Simulator/)** · hai un account Claude? Usa la [versione su claude.ai](https://claude.ai/artifact/82WfSbLV5ZHPM3FW9whLbn), con correzione automatica e mappe concettuali.
+
 ## Cosa fa
 
 - Legge il PDF del paniere ed estrae lezioni, domande chiuse e domande aperte.
