@@ -1,0 +1,1813 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Simulatore Esame Paniere</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one working column (max 860px) — setup card → exam (sticky bar + navigator + question sheet) → results with review list */
+:root {
+  --bg: #f3f5f8; --surface: #ffffff; --sunken: #e9edf2; --ink: #142031; --muted: #5a6779; --line: #d6dde6;
+  --accent: #2b4a9b; --accent-ink: #ffffff; --accent-soft: #e3e9f7;
+  --ok: #1f7a4d; --ok-soft: #e1f2e8; --bad: #b42e2e; --bad-soft: #f8e3e3; --warn: #a2620b; --warn-soft: #fbefd9;
+  --f-ui: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-q: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+  --m1: #0b6e8f; --m2: #6d4bb8; --m3: #1e7f5c; --m4: #b4471f; --m5: #9a2f6b; --m6: #3b5ba9; --m7: #7a6a12; --m8: #2f6f6a;
+  --f-d: "Bricolage Grotesque", "Public Sans", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141d; --surface: #161f2c; --sunken: #1d2837; --ink: #e5eaf1; --muted: #95a2b4; --line: #2a3748;
+  --accent: #8ea9f5; --accent-ink: #0e141d; --accent-soft: #1f2c47;
+  --ok: #5cc48f; --ok-soft: #173327; --bad: #f08181; --bad-soft: #3a1d20; --warn: #e9b35c; --warn-soft: #3a2c14;
+  --m1: #4fb3d4; --m2: #a48be8; --m3: #4fc496; --m4: #f08a5d; --m5: #e07ab4; --m6: #7fa0f0; --m7: #d8c25a; --m8: #6fc7bf;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e141d; --surface: #161f2c; --sunken: #1d2837; --ink: #e5eaf1; --muted: #95a2b4; --line: #2a3748;
+  --accent: #8ea9f5; --accent-ink: #0e141d; --accent-soft: #1f2c47;
+  --ok: #5cc48f; --ok-soft: #173327; --bad: #f08181; --bad-soft: #3a1d20; --warn: #e9b35c; --warn-soft: #3a2c14;
+  --m1: #4fb3d4; --m2: #a48be8; --m3: #4fc496; --m4: #f08a5d; --m5: #e07ab4; --m6: #7fa0f0; --m7: #d8c25a; --m8: #6fc7bf;
+  color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 860px; margin: 0 auto; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.25rem; font-weight: 700; }
+.eyebrow { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.09em; font-weight: 600; color: var(--muted); }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+button { font: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 0.92rem; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--ink); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- setup ---------- */
+header.top { padding-block: 32px 20px; display: grid; gap: 8px; }
+.lede { color: var(--muted); max-width: 62ch; }
+.claudecta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin-top: 16px; padding: 14px 16px; border-radius: var(--r); background: var(--accent-soft); border: 1px solid var(--line); font-size: 0.92rem; }
+.claudecta > div { flex: 1 1 320px; display: grid; gap: 4px; }
+.claudecta .btn { text-decoration: none; flex: 0 0 auto; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px; }
+.stack { display: grid; gap: 18px; }
+.drop { border: 2px dashed var(--line); border-radius: var(--r); padding: 34px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; background: var(--sunken); transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop strong { font-size: 1.05rem; }
+.format { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.format > div { background: var(--surface); padding: 14px 16px; display: grid; gap: 2px; }
+.format .big { font-family: var(--f-mono); font-size: 1.5rem; font-weight: 700; }
+.format .lbl { font-size: 0.85rem; color: var(--muted); }
+.summary { display: grid; gap: 4px; }
+.summary .course { font-family: var(--f-q); font-size: 1.3rem; font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 0.82rem; padding: 3px 10px; border-radius: 999px; background: var(--sunken); color: var(--muted); }
+.chip b { color: var(--ink); font-family: var(--f-mono); font-weight: 700; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 10px; }
+legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
+.modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mode { position: relative; border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 2px; cursor: pointer; }
+.mode input { position: absolute; opacity: 0; pointer-events: none; }
+.mode:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.mode:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mode .t { font-weight: 700; }
+.mode .d { font-size: 0.85rem; color: var(--muted); }
+.range { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+select { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.note { font-size: 0.86rem; padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--ink); }
+.note.err { background: var(--bad-soft); }
+.unigrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.modes.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.uni { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 14px 16px; text-align: left; display: grid; gap: 4px; align-content: start; }
+.uni .n { font-weight: 700; font-size: 1.02rem; }
+.uni .d { font-size: 0.82rem; color: var(--muted); }
+.uni[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+.uni:not(:disabled):hover { border-color: var(--accent); }
+.uni:disabled { cursor: not-allowed; background: var(--sunken); color: var(--muted); }
+.soon { justify-self: start; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); }
+.lib { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.libitem { display: flex; gap: 12px 16px; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 14px 0; border-top: 1px solid var(--line); }
+.libitem:first-child { border-top: 0; padding-top: 4px; }
+.libmain { display: grid; gap: 3px; min-width: 0; flex: 1 1 280px; }
+.libname { font-family: var(--f-q); font-size: 1.08rem; overflow-wrap: anywhere; }
+.libitem input[type="text"] { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; flex: 1 1 200px; }
+/* tooltip: shown while the button is hovered or keyboard-focused */
+.tipwrap { position: relative; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tip { position: absolute; bottom: calc(100% + 10px); right: 0; z-index: 20; width: min(320px, calc(100vw - 32px)); padding: 12px 14px; border-radius: 10px;
+  background: var(--ink); color: var(--bg); font-size: 0.84rem; line-height: 1.45; font-weight: 400; box-shadow: 0 8px 24px rgb(0 0 0 / .18);
+  opacity: 0; visibility: hidden; transform: translateY(4px); transition: opacity .15s, transform .15s, visibility 0s .15s; pointer-events: none; }
+.tip::after { content: ""; position: absolute; top: 100%; right: 28px; border: 7px solid transparent; border-top-color: var(--ink); }
+.tipwrap:has(button:hover) .tip, .tipwrap:has(button:focus-visible) .tip { opacity: 1; visibility: visible; transform: none; transition: opacity .15s, transform .15s; }
+@media (max-width: 640px) { .tip { right: auto; left: 0; } .tip::after { right: auto; left: 28px; } }
+@media (prefers-reduced-motion: reduce) { .tip { transition: none; transform: none; } }
+.saved { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+/* ---------- exam ---------- */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 10px max(16px, env(safe-area-inset-left, 0px)); }
+.bar .in { max-width: 860px; margin: 0 auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.bar .title { min-width: 0; flex: 1 1 220px; }
+.bar .title .c { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar .title .s { font-size: 0.82rem; color: var(--muted); }
+.timer { font-family: var(--f-mono); font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums; padding: 4px 12px; border-radius: 8px; background: var(--sunken); }
+.timer.warn { background: var(--warn-soft); color: var(--warn); }
+.timer.crit { background: var(--bad-soft); color: var(--bad); }
+.timer small { font-size: 0.7rem; font-weight: 500; color: var(--muted); display: block; line-height: 1; text-transform: uppercase; letter-spacing: .08em; font-family: var(--f-ui); }
+.exam { display: grid; gap: 18px; padding-top: 20px; }
+.nav { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 6px; }
+.nav button { aspect-ratio: 1; max-width: 100%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 7px; font-family: var(--f-mono); font-size: 0.82rem; font-weight: 700; padding: 0; position: relative; }
+.nav button.done { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.nav button.cur { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.nav button.open::after { content: ""; position: absolute; top: 3px; right: 3px; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .6; }
+.nav button.flag { box-shadow: inset 0 -3px 0 var(--warn); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.8rem; color: var(--muted); }
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; display: grid; gap: 20px; }
+.qhead { display: flex; gap: 10px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+.qtext { font-family: var(--f-q); font-size: 1.28rem; line-height: 1.45; font-weight: 600; }
+.opts { display: grid; gap: 8px; }
+.opt { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; text-align: left; background: var(--surface); color: var(--ink); width: 100%; }
+.opt:hover { border-color: var(--accent); }
+.opt .k { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-family: var(--f-mono); font-weight: 700; font-size: 0.8rem; color: var(--muted); }
+.opt .v { padding-top: 3px; }
+.opt.sel { border-color: var(--accent); background: var(--accent-soft); }
+.opt.sel .k { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.opt:disabled { cursor: default; }
+.opt:disabled:hover { border-color: var(--line); }
+.opt.right, .opt.right:disabled:hover { border-color: var(--ok); background: var(--ok-soft); }
+.opt.right .k { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+.opt.bad, .opt.bad:disabled:hover { border-color: var(--bad); background: var(--bad-soft); }
+.opt.bad .k { background: var(--bad); border-color: var(--bad); color: var(--surface); }
+.memnote { font-size: 0.8rem; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.trend { width: 100%; height: auto; max-width: 640px; display: block; overflow: visible; }
+.trend text { font: 11px var(--f-ui); fill: var(--muted); }
+.trend .tg { stroke: var(--line); stroke-width: 1; }
+.trend .tg18 { stroke: var(--warn); stroke-width: 1; stroke-dasharray: 4 4; }
+.trend polyline { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.trend circle { stroke: var(--surface); stroke-width: 2; }
+.trend .tok, .spark .tok { fill: var(--ok); } .trend .tko, .spark .tko { fill: var(--bad); }
+.sparkbtn { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunken); color: var(--ink); font: inherit; cursor: pointer; text-align: left; }
+.sparkbtn:hover { border-color: var(--accent); }
+.sparkbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.spark { width: 132px; height: 40px; overflow: visible; }
+.spark .tg18 { stroke: var(--warn); stroke-width: 1; stroke-dasharray: 3 3; }
+.spark polyline { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.spark circle { stroke: var(--sunken); stroke-width: 1.5; }
+.sparkv { display: grid; gap: 1px; line-height: 1.2; }
+.sparkv b { font-size: 1.05rem; } .sparkv b.ok { color: var(--ok); } .sparkv b.ko { color: var(--bad); }
+.sparkv span { font-size: 0.78rem; color: var(--accent); font-weight: 600; white-space: nowrap; }
+.lstats { display: grid; }
+.lrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 200px) 64px 76px; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 0.9rem; }
+.lrow.lhead { border-top: 0; padding-top: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--muted); }
+.ltopic { overflow-wrap: anywhere; }
+.lbar { display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 8px; align-items: center; }
+.lbar .num { text-align: right; font-size: 0.85rem; }
+@media (max-width: 640px) { .lrow { grid-template-columns: minmax(0, 1fr) 96px 52px; } .lrow > :last-child { grid-column: 1 / -1; justify-self: start; } .lrow > :last-child:empty { display: none; } }
+textarea { font: inherit; font-family: var(--f-q); font-size: 1.05rem; line-height: 1.55; width: 100%; min-height: 240px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface); color: var(--ink); }
+textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+.foot { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.confirm { border: 1px solid var(--warn); background: var(--warn-soft); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 12px; }
+
+/* ---------- results ---------- */
+.score { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: center; }
+.score .tot { font-family: var(--f-mono); font-weight: 700; font-size: 3.4rem; line-height: 1; }
+.score .tot span { font-size: 1.4rem; color: var(--muted); }
+.verdict { display: inline-block; font-weight: 700; font-size: 0.85rem; padding: 3px 10px; border-radius: 999px; }
+.verdict.pass { background: var(--ok-soft); color: var(--ok); }
+.verdict.fail { background: var(--bad-soft); color: var(--bad); }
+.verdict.pend { background: var(--sunken); color: var(--muted); }
+.bars { display: grid; gap: 10px; }
+.bars .b { display: grid; gap: 4px; }
+.bars .b .h { display: flex; justify-content: space-between; font-size: 0.88rem; }
+.track { height: 8px; border-radius: 4px; background: var(--sunken); overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--accent); border-radius: 4px; transition: width .4s; }
+.status { display: flex; gap: 10px; align-items: center; font-size: 0.9rem; padding: 10px 14px; border-radius: 8px; background: var(--sunken); }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: sp 0.8s linear infinite; flex: none; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.filters button { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: 0.84rem; font-weight: 600; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.review { display: grid; gap: 12px; }
+.ritem { background: var(--surface); border: 1px solid var(--line); border-left-width: 4px; border-radius: var(--r); padding: 18px 20px; display: grid; gap: 12px; }
+.ritem.ok { border-left-color: var(--ok); }
+.ritem.ko { border-left-color: var(--bad); }
+.ritem.part { border-left-color: var(--warn); }
+.ritem.unk { border-left-color: var(--line); }
+.ritem .qt { font-family: var(--f-q); font-weight: 600; font-size: 1.08rem; line-height: 1.45; }
+.pts { font-family: var(--f-mono); font-weight: 700; font-size: 0.85rem; padding: 2px 9px; border-radius: 6px; white-space: nowrap; }
+.ok .pts { background: var(--ok-soft); color: var(--ok); }
+.ko .pts { background: var(--bad-soft); color: var(--bad); }
+.part .pts { background: var(--warn-soft); color: var(--warn); }
+.unk .pts { background: var(--sunken); color: var(--muted); }
+.ropts { display: grid; gap: 6px; }
+.ropt { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 8px 12px; border-radius: 7px; border: 1px solid transparent; background: var(--sunken); font-size: 0.94rem; text-align: left; color: var(--ink); width: 100%; }
+.ropt:hover { border-color: var(--line); }
+.ropt .k { font-family: var(--f-mono); font-weight: 700; color: var(--muted); font-size: 0.82rem; padding-top: 2px; }
+.ropt .tag { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding-top: 3px; white-space: nowrap; }
+.ropt.correct { background: var(--ok-soft); border-color: var(--ok); }
+.ropt.correct .tag { color: var(--ok); }
+.ropt.wrong { background: var(--bad-soft); border-color: var(--bad); }
+.ropt.wrong .tag { color: var(--bad); }
+.why { font-size: 0.9rem; color: var(--muted); }
+.why b { color: var(--ink); font-weight: 600; }
+.answer { font-family: var(--f-q); white-space: pre-wrap; background: var(--sunken); border-radius: 8px; padding: 12px 14px; font-size: 0.98rem; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); color: var(--ink); padding: 6px 14px; font-family: var(--f-mono); font-weight: 700; border-left: 1px solid var(--line); }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+details summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--accent); }
+details .answer { margin-top: 8px; }
+.hint { font-size: 0.8rem; color: var(--muted); }
+.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 10px; }
+.steps a { color: var(--accent); font-weight: 600; }
+
+
+/* ---------- concept map ---------- */
+.mapview { gap: 20px; }
+.mapbox { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; overflow-x: auto; }
+.mapbox svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.mapbox text { font-family: var(--f-ui); fill: var(--ink); }
+.mapbox .leaf { font-size: 12.5px; fill: var(--muted); }
+.mapbox .node-t { font-family: var(--f-d); font-weight: 800; font-size: 16px; }
+.mapbox .node-s { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
+.mapbox .center-t { fill: var(--bg); font-family: var(--f-d); font-weight: 800; font-size: 20px; }
+.mapbox .center-s { fill: var(--bg); font-family: var(--f-mono); font-size: 11px; }
+.mapbox a:hover rect.nd { stroke-width: 3; }
+.mapbox a:focus-visible { outline: none; }
+.mapbox a:focus-visible rect.nd { stroke-width: 4; }
+.jump { display: flex; flex-wrap: wrap; gap: 6px; }
+.jump a { font-family: var(--f-mono); font-size: 0.76rem; text-decoration: none; color: var(--ink); padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); }
+.jump a:hover { border-color: var(--accent); }
+.jump a i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+section.blk { margin-top: 26px; scroll-margin-top: 16px; display: grid; gap: 16px; }
+.blk-head { display: grid; gap: 6px; border-left: 5px solid var(--sc); padding-left: 14px; }
+.blk-head .eyebrow { color: var(--sc); }
+.blk-head h2 { font-family: var(--f-d); font-size: 1.6rem; font-weight: 800; }
+.blk-head p { color: var(--muted); max-width: 72ch; }
+.tldr { background: color-mix(in srgb, var(--sc) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--sc) 30%, var(--line)); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 6px; }
+.tldr .eyebrow { color: var(--sc); }
+.tldr ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.concepts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.concept { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 13px 15px; display: grid; gap: 5px; align-content: start; min-width: 0; }
+.concept h3 { color: var(--sc); font-size: 1rem; }
+.concept p { font-size: 0.93rem; }
+.sub { font-family: var(--f-mono); font-size: 0.78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.open { display: grid; gap: 8px; }
+.open details { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 0 15px; }
+.open summary { cursor: pointer; padding: 11px 0; font-weight: 600; font-size: 0.95rem; list-style: none; display: flex; gap: 10px; color: var(--ink); }
+.open summary::-webkit-details-marker { display: none; }
+.open summary::before { content: "+"; font-family: var(--f-mono); font-weight: 700; color: var(--sc); flex: none; }
+.open details[open] summary::before { content: "−"; }
+.open .ans { padding: 0 0 13px 22px; font-size: 0.93rem; }
+.mapview code, .open code { font-family: var(--f-mono); font-size: .88em; background: var(--sunken); padding: 1px 5px; border-radius: 4px; }
+.genp .steps { margin-top: 0; }
+.maplist { display: none; }
+.maplist .mc { background: var(--ink); color: var(--bg); border-radius: 999px; padding: 12px 18px; text-align: center; display: grid; gap: 2px; }
+.maplist .mc b { font-family: var(--f-d); font-size: 1.2rem; }
+.maplist .mc span { font-family: var(--f-mono); font-size: 0.72rem; }
+.maplist ul { list-style: none; margin: 12px 0 0; padding: 0 0 0 18px; border-left: 2px solid var(--line); display: grid; gap: 10px; }
+.maplist a { display: grid; gap: 3px; text-decoration: none; color: var(--ink); background: var(--surface); border: 2px solid var(--sc); border-radius: var(--r); padding: 10px 14px; position: relative; }
+.maplist a.todo { border-style: dashed; }
+.maplist a::before { content: ""; position: absolute; left: -20px; top: 50%; width: 18px; border-top: 2px solid var(--line); }
+.maplist a .eyebrow { color: var(--sc); }
+.maplist a strong { font-family: var(--f-d); font-size: 1.05rem; color: var(--sc); }
+@media (max-width: 700px) { .mapbox { display: none; } .maplist { display: block; } }
+@media (max-width: 640px) {
+  h1 { font-size: 1.45rem; }
+  .format { grid-template-columns: minmax(0, 1fr); }
+  .modes, .modes.three { grid-template-columns: minmax(0, 1fr); }
+  .unigrid { grid-template-columns: minmax(0, 1fr); }
+  .nav { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+  .sheet { padding: 18px; }
+  .qtext { font-size: 1.12rem; }
+  .score { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .timer { font-size: 1.15rem; }
+}
+@media (prefers-reduced-motion: reduce) { .spin { animation-duration: 3s; } .track i { transition: none; } }
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script type="module">
+/* ========== PDF parsing ========== */
+/* Headers, footers, page numbers and index rows: never part of a question. */
+const NOISE = [
+  /^(Set Domande:|Docente:|©|INGEGNERIA|Indice\b)/i,
+  /Data Stampa|Università Telematica/i,
+  /^\d+\s*\/\s*\d+$/,          // page counter "3 / 40"
+  /\.{5,}\s*p\.\s*\d+$/,        // index row "Lezione 3 ....... p. 12"
+  /^N°\s*Domande|^Generato il/i,
+];
+// One page's text items -> visual lines (top to bottom), each with x of its first item and joined text.
+function pageLines(items, page) {
+  const its = items.filter(i => i.str.trim()).sort((a, b) => b.y - a.y || a.x - b.x);
+  const lines = [];
+  for (const it of its) {
+    let ln = lines[lines.length - 1]; // items are sorted by y, so only the last line can match
+    if (!ln || Math.abs(ln.y - it.y) >= 2.5) lines.push(ln = { y: it.y, h: 0, page, parts: [] });
+    ln.parts.push(it);
+    ln.h = Math.max(ln.h, it.h);
+  }
+  for (const ln of lines) {
+    ln.parts.sort((a, b) => a.x - b.x);
+    ln.x = ln.parts[0].x;
+    let t = "", end = 0;
+    for (const p of ln.parts) {
+      if (t && p.x - end > 1 && !/\s$/.test(t) && !/^\s/.test(p.str)) t += " ";
+      t += p.str; end = p.x + (p.w || 0);
+    }
+    ln.text = t.replace(/\s+/g, " ").trim();
+  }
+  return lines;
+}
+function parsePaniere(pages) {
+  let course = "", isPaniere = false;
+  const declared = { mc: null, open: null };
+  const allLines = [];
+  pages.forEach((pg, pi) => {
+    for (const ln of pageLines(pg.items, pi)) {
+      const t = ln.text;
+      if (/^Set Domande\b/i.test(t)) {
+        isPaniere = true;
+        const m = t.match(/^Set Domande:\s*(.+)$/i);
+        if (m && !course) course = m[1].trim();
+      }
+      const dm = t.match(/^N°\s*Domande\s+(Aperte|Chiuse)\s+(\d+)/i);
+      if (dm) declared[dm[1].toLowerCase() === "aperte" ? "open" : "mc"] = +dm[2];
+      if (t && !NOISE.some(r => r.test(t))) allLines.push(ln);
+    }
+  });
+  const QRE = /^(\d{1,3})\.\s+(.+)$/;
+  // dominant x of question-number lines
+  const xs = {};
+  allLines.forEach(l => { if (QRE.test(l.text)) { const k = Math.round(l.x); xs[k] = (xs[k] || 0) + 1; } });
+  const qx = +Object.entries(xs).sort((a, b) => b[1] - a[1])[0]?.[0];
+  if (isNaN(qx)) return { course, questions: [], declared, isPaniere };
+  const questions = [];
+  let topic = "", cur = null, last = null;
+  const flush = () => { if (cur) { cur.text = cur.text.replace(/^\d{1,2}[.)]\s+/, ""); delete cur.textX; questions.push(cur); } cur = null; };
+  for (const l of allLines) {
+    const lez = l.text.match(/^(Lezione|Lesson|Modulo)\s+(\d+)\b/i);
+    if (lez && Math.abs(l.x - qx) < 4) { flush(); topic = l.text; last = null; continue; }
+    const qm = l.text.match(QRE);
+    if (qm && Math.abs(l.x - qx) < 3) {
+      flush();
+      const second = l.parts.length > 1 ? l.parts[1].x : l.x + 15;
+      cur = { topic, num: qm[1], text: qm[2], options: [], textX: second };
+      last = l; continue;
+    }
+    if (!cur) continue;
+    const gap = last && last.page === l.page ? last.y - l.y : Infinity;
+    const lh = Math.max(l.h || 8, 6);
+    if (!cur.options.length && Math.abs(l.x - cur.textX) < 2 && gap < lh * 1.6) {
+      cur.text += " " + l.text;
+    } else if (cur.options.length && gap < lh * 1.6) {
+      cur.options[cur.options.length - 1] += " " + l.text;
+    } else if (l.x > qx + 3) {
+      cur.options.push(l.text);
+    }
+    last = l;
+  }
+  flush();
+  return { course, questions, declared, isPaniere };
+}
+
+
+const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs";
+const PDFJS_WORKER = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs";
+let pdfjsLib = null;
+async function loadPdfjs() {
+  if (pdfjsLib) return pdfjsLib;
+  const [lib, worker] = await Promise.all([import(PDFJS), import(PDFJS_WORKER)]);
+  globalThis.pdfjsWorker = worker; // run the parser on the main thread (no cross-origin Worker needed)
+  lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+  pdfjsLib = lib;
+  return lib;
+}
+async function readPdf(file, onProgress) {
+  const lib = await loadPdfjs();
+  const data = new Uint8Array(await file.arrayBuffer());
+  const doc = await lib.getDocument({ data, verbosity: 0 }).promise;
+  const pages = [];
+  try {
+    for (let p = 1; p <= doc.numPages; p++) {
+      const pg = await doc.getPage(p);
+      const tc = await pg.getTextContent();
+      pages.push({ items: tc.items.filter(i => i.str).map(i => ({ str: i.str, x: i.transform[4], y: i.transform[5], h: i.height || Math.abs(i.transform[3]), w: i.width })) });
+      pg.cleanup();
+      onProgress && onProgress(p, doc.numPages);
+    }
+  } finally { doc.destroy(); }
+  return parsePaniere(pages);
+}
+
+/* ========== constants & state ========== */
+/* Exam formats. mc/open = number of questions; lode = the last multiple-choice question only counts for the honours;
+   pass = minimum score (null = no verdict on its own). */
+const ECAMPUS_FORMATS = [
+  { id: "std", label: "Esame scritto", mc: 24, open: 2, minutes: 60, pass: 18, max: 30, passOk: "Superato", passKo: "Non superato", passText: "sufficienza da 18",
+    desc: "24 domande a risposta multipla + 2 aperte." },
+];
+const GROUP_FORMATS = [
+  { id: "inter", label: "Prova intermedia online", mc: 24, open: 0, minutes: 45, pass: 15, max: 24, passOk: "Ammesso alla finale", passKo: "Non ammesso alla finale", passText: "almeno 15 per accedere alla finale",
+    desc: "24 domande a risposta multipla, da casa.", tip: "L'intermedia riguarda tutto il programma tranne le ultime 10 videolezioni (le ultime 5 per gli insegnamenti fino a 4 CFU): puoi escluderle con l'intervallo di lezioni." },
+  { id: "finale", label: "Prova finale in presenza", mc: 7, open: 0, minutes: 45, lode: true, pass: null, max: 6, passText: "si somma al punteggio dell'intermedia",
+    desc: "6 domande + 1 per la lode, sulle ultime videolezioni.", tip: "La finale riguarda le ultime 10 videolezioni (le ultime 5 per gli insegnamenti fino a 4 CFU): selezionale con l'intervallo di lezioni." },
+  { id: "unico", label: "Esame unico scritto", mc: 31, open: 0, minutes: 45, lode: true, pass: 18, max: 30, passOk: "Superato", passKo: "Non superato", passText: "sufficienza da 18",
+    desc: "31 domande sull'intero programma: 30 + 1 per la lode." },
+];
+const LS_BANK = "simesame.bank.v1", LS_EXAM = "simesame.exam.v1";
+const store = {
+  get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+let bank = null;     // {course, fileName, questions:[{topic,num,text,options}]}
+let exam = null;     // {course, mode, deadline, started, items:[...], cur, submitted, timeUp, grading}
+let view = "setup";
+let tick = null;
+let sampleFn = undefined; // undefined = not resolved yet, null = unavailable
+const app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const L = i => String.fromCharCode(65 + i);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const isMc = q => q.options.length >= 2;
+const norm = s => s.toLowerCase().replace(/[^a-z0-9àèéìòù]+/gi, " ").trim();
+
+async function getSample() {
+  if (sampleFn !== undefined) return sampleFn;
+  try { sampleFn = window.claude?.use ? await window.claude.use("sample") : null; } catch { sampleFn = null; }
+  return sampleFn;
+}
+
+/* ========== library of panieri (IndexedDB, per browser) ========== */
+const IDB_NAME = "simesame", IDB_STORE = "panieri";
+let library = [];          // [{id, name, course, fileName, questions, flagged, added, used, stats}]
+let idbOk = true;
+function idb() {
+  return new Promise((res, rej) => {
+    let r;
+    try { r = indexedDB.open(IDB_NAME, 1); } catch (e) { rej(e); return; }
+    r.onupgradeneeded = () => r.result.createObjectStore(IDB_STORE, { keyPath: "id" });
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbDo(mode, fn) {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, mode), st = tx.objectStore(IDB_STORE);
+    const out = fn(st);
+    tx.oncomplete = () => { db.close(); res(out && "result" in out ? out.result : undefined); };
+    tx.onerror = tx.onabort = () => { db.close(); rej(tx.error); };
+  });
+}
+async function libLoad() {
+  try { library = (await idbDo("readonly", st => st.getAll())) || []; }
+  catch { idbOk = false; }
+  // move the paniere saved by the previous version into the library
+  const old = store.get(LS_BANK);
+  if (old && old.questions) {
+    if (!library.some(p => p.course === old.course && p.questions.length === old.questions.length)) await libSave(newRecord(old));
+    if (idbOk) store.del(LS_BANK);
+  }
+  library.sort((a, b) => (b.used || b.added) - (a.used || a.added));
+}
+async function libSave(p) {
+  const i = library.findIndex(x => x.id === p.id);
+  if (i >= 0) library[i] = p; else library.unshift(p);
+  if (!idbOk) return;
+  try { await idbDo("readwrite", st => st.put(p)); } catch { idbOk = false; }
+}
+async function libDelete(id) {
+  library = library.filter(p => p.id !== id);
+  if (!idbOk) return;
+  try { await idbDo("readwrite", st => st.delete(id)); } catch {}
+}
+function newRecord(b) {
+  return { id: "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: "", course: b.course || "", fileName: b.fileName || "", questions: b.questions, flagged: !!b.flagged, added: Date.now(), used: Date.now(), stats: { runs: 0, last: null, best: null } };
+}
+const recName = p => p.name || p.course || p.fileName || "Paniere senza nome";
+const fmtDate = ts => new Date(ts).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
+let renaming = null, deleting = null;
+
+function libraryHtml() {
+  if (!library.length) return idbOk ? "" : `<p class="note">Questo browser non permette di salvare i panieri: dovrai ricaricare il PDF ogni volta.</p>`;
+  return `<section class="card stack" aria-label="I tuoi panieri">
+    <div><div class="eyebrow">I tuoi panieri</div><p class="hint">Salvati in questo browser. Scegline uno per iniziare senza ricaricare il PDF.</p></div>
+    <ul class="lib">${library.map(p => {
+      const mc = p.questions.filter(isMc).length, op = p.questions.length - mc;
+      const s = p.stats || {};
+      const statTxt = s.runs ? `${s.runs} ${s.runs === 1 ? "simulazione" : "simulazioni"} · ultimo voto <b class="num">${s.last}</b> · migliore <b class="num">${s.best}</b>` : "Nessuna simulazione completata";
+      if (deleting === p.id) return `<li class="libitem"><div class="libmain"><strong>Eliminare «${esc(recName(p))}»?</strong><span class="hint">Potrai sempre ricaricare il PDF.</span></div><div class="row"><button class="btn" data-delyes="${p.id}">Elimina</button><button class="btn ghost" data-delno="1">Annulla</button></div></li>`;
+      return `<li class="libitem">
+        <div class="libmain">
+          ${renaming === p.id
+            ? `<div class="row"><input type="text" id="rn-${p.id}" value="${esc(recName(p))}" aria-label="Nuovo nome"><button class="btn primary" data-rnsave="${p.id}">Salva</button><button class="btn ghost" data-rnno="1">Annulla</button></div>`
+            : `<strong class="libname">${esc(recName(p))}</strong>`}
+          <span class="hint"><span class="num">${mc}</span> chiuse · <span class="num">${op}</span> aperte · caricato il ${fmtDate(p.added)}${p.flagged ? ` · <span style="color:var(--warn)">letto con differenze</span>` : ""}</span>
+          <span class="hint">${statTxt} · risposte salvate: <span class="num">${coverage(p)}</span> di <span class="num">${mc}</span>${p.map ? ` · mappa: ${p.map.blocks.filter(b => b.content).length} di ${p.map.blocks.length} blocchi` : ""}</span>
+        </div>
+        ${sparkHtml(p)}
+        <div class="row">
+          <button class="btn primary" data-use="${p.id}">Usa</button>
+          <button class="btn" data-libmap="${p.id}">Mappa</button>
+          ${mdButton(p)}
+          <button class="btn ghost" data-rn="${p.id}">Rinomina</button>
+          <button class="btn ghost" data-del="${p.id}">Elimina</button>
+        </div>
+      </li>`;
+    }).join("")}</ul>
+  </section>`;
+}
+function bindLibrary() {
+  const q = (sel, fn) => app.querySelectorAll(sel).forEach(b => b.onclick = () => fn(b));
+  q("[data-use]", async b => { const p = library.find(x => x.id === b.dataset.use); if (!p) return; p.used = Date.now(); bank = p; setupMsg = ""; renderSetup(); libSave(p); });
+  q("[data-stats]", b => {
+    const p = library.find(x => x.id === b.dataset.stats); if (!p) return;
+    p.used = Date.now(); bank = p; setupMsg = ""; renderSetup(); libSave(p);
+    document.querySelector(".statsec")?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  });
+  q("[data-libmap]", b => { const p = library.find(x => x.id === b.dataset.libmap); if (!p) return; p.used = Date.now(); bank = p; libSave(p); openMap(); });
+  q("[data-rn]", b => { renaming = b.dataset.rn; deleting = null; renderSetup(); const i = document.getElementById("rn-" + renaming); if (i) { i.focus(); i.select(); } });
+  q("[data-rnno]", () => { renaming = null; renderSetup(); });
+  q("[data-rnsave]", async b => { const p = library.find(x => x.id === b.dataset.rnsave); const v = document.getElementById("rn-" + p.id).value.trim(); p.name = v === (p.course || p.fileName) ? "" : v; renaming = null; await libSave(p); renderSetup(); });
+  app.querySelectorAll("[id^='rn-']").forEach(i => i.onkeydown = e => { if (e.key === "Enter") app.querySelector(`[data-rnsave="${i.id.slice(3)}"]`).click(); if (e.key === "Escape") { renaming = null; renderSetup(); } });
+  q("[data-del]", b => { deleting = b.dataset.del; renaming = null; renderSetup(); });
+  q("[data-md]", b => { const p = library.find(x => x.id === b.dataset.md) || (bank?.id === b.dataset.md ? bank : null); if (p) exportMd(p, b); });
+  q("[data-delno]", () => { deleting = null; renderSetup(); });
+  q("[data-delyes]", async b => { await libDelete(b.dataset.delyes); deleting = null; renderSetup(); });
+}
+/* ---- Markdown export: the paniere as already read, for chatbots and notes ---- */
+function paniereMarkdown(p) {
+  const mc = p.questions.filter(isMc).length, op = p.questions.length - mc;
+  const cov = coverage(p);
+  const out = [`# ${recName(p)}`, "", `> Paniere esportato dal Simulatore d'esame il ${fmtDate(Date.now())}: ${mc} ${mc === 1 ? "domanda" : "domande"} a risposta multipla, ${op} ${op === 1 ? "aperta" : "aperte"}.${cov ? ` Risposta corretta indicata per ${cov} domande chiuse, ricavata dalle correzioni delle simulazioni: verifica sulle dispense quelle dubbie.` : ""}`];
+  let topic = null;
+  for (const q of p.questions) {
+    if (q.topic !== topic) { topic = q.topic; out.push("", `## ${topic || "Domande"}`); }
+    out.push("", `### ${q.num ? q.num + ". " : ""}${q.text}`);
+    const k = qkey(q);
+    if (isMc(q)) {
+      out.push("", ...q.options.map((o, i) => `- ${L(i)}) ${o}`));
+      const a = p.answers?.[k], ci = a ? q.options.findIndex(o => norm(o) === a.c) : -1;
+      if (ci >= 0) out.push("", `**Risposta corretta:** ${L(ci)}) ${q.options[ci]}${a.why ? `  \n**Perché:** ${a.why}` : ""}`);
+    } else {
+      out.push("", "*Domanda aperta*");
+      if (p.models?.[k]) out.push("", `**Risposta modello:** ${p.models[k]}`);
+    }
+  }
+  const m = p.map;
+  if (m && m.blocks.some(b => b.content)) {
+    out.push("", "---", "", `# Mappa concettuale: ${m.center}`);
+    if (m.thread) out.push("", m.thread);
+    m.blocks.forEach((b, i) => {
+      out.push("", `## Blocco ${i + 1}: ${b.title} (${rangesLabel(b.lessons)})`);
+      if (b.desc) out.push("", b.desc);
+      const c = b.content; if (!c) { out.push("", "*Blocco ancora da completare.*"); return; }
+      if (c.tldr.length) out.push("", "### Da sapere", "", ...c.tldr.map(x => `- ${x}`));
+      if (c.concepts.length) out.push("", "### Concetti", "", ...c.concepts.map(([t, d]) => `- **${t}:** ${d}`));
+      if (c.open.length) out.push("", "### Domande aperte · traccia di risposta", ...c.open.flatMap(([q, a]) => ["", `**${q}**`, "", a]));
+    });
+  }
+  return out.join("\n") + "\n";
+}
+const MD_TIP = "Il Markdown è testo semplice con pochi simboli che ne segnano la struttura: # per i titoli, - per gli elenchi. Ai chatbot (Claude, Gemini, ChatGPT, NotebookLM) conviene perché leggono subito lezioni, domande e opzioni senza la grafica del PDF: il file è molto più leggero, non ci sono errori di lettura e le risposte sono più precise.";
+const mdButton = p => `<span class="tipwrap"><button class="btn ghost" data-md="${p.id}" aria-describedby="tip-${p.id}">Esporta in Markdown</button><span class="tip" role="tooltip" id="tip-${p.id}">${esc(MD_TIP)}</span><span class="hint mdmsg" role="status"></span></span>`;
+const fileName = s => s.replace(/[\\/:*?"<>|]+/g, "-").trim() || "paniere";
+// Offer a generated file: claude.ai's save prompt when hosted there, a normal browser download on a
+// regular site (e.g. GitHub Pages), and the clipboard as the last resort.
+async function offerFile(filename, data, say) {
+  if (!window.claude) {
+    const url = URL.createObjectURL(new Blob([data], { type: filename.endsWith(".json") ? "application/json" : "text/markdown;charset=utf-8" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    say("File scaricato."); return;
+  }
+  let dl = null;
+  try { dl = window.claude?.use ? await window.claude.use("downloads") : null; } catch {}
+  if (dl) {
+    try { await dl.save({ filename, data }); say("File salvato."); return; }
+    catch (e) { if (e?.code === "declined") { say(""); return; } if (e?.code === "rate_limited") { say("C'è già una richiesta aperta: riprova tra poco."); return; } }
+  }
+  try { await navigator.clipboard.writeText(data); say("Qui non posso salvare file: ho copiato il contenuto negli appunti, incollalo dove vuoi."); }
+  catch { say("Non riesco a salvare né a copiare il file in questa vista."); }
+}
+function exportMd(p, btn) {
+  const msg = btn.parentElement.querySelector(".mdmsg");
+  offerFile(fileName(recName(p)) + ".md", paniereMarkdown(p), t => { msg.textContent = t; });
+}
+
+/* ---- answer memory & history, kept in the paniere record ----
+   p.answers[key] = {c: normalized text of the correct option, why, src: "ai"|"user", t}
+   p.models[key]  = model answer of an open question
+   p.hist[key]    = {topic, r: {examStarted: 1|0}}  (one result per graded exam, so re-grading overwrites instead of adding) */
+const qkey = q => norm(q.text) + "|" + q.options.map(norm).sort().join("|");
+const examBank = () => exam && (library.find(p => p.id === exam.bankId) || (bank && bank.id === exam.bankId ? bank : null));
+const knownIndex = (p, it) => { const a = p?.answers?.[it.key]; return a ? it.options.findIndex(o => norm(o) === a.c) : -1; };
+const coverage = p => p.questions.filter(q => isMc(q) && p.answers?.[qkey(q)]).length;
+function remember(items, src) {
+  const p = examBank(); if (!p) return;
+  const A = p.answers || (p.answers = {}), M = p.models || (p.models = {});
+  let changed = false;
+  for (const it of items) {
+    if (!it.key) continue;
+    if (it.type === "mc") {
+      if (it.correct == null) continue;
+      const c = norm(it.options[it.correct]), old = A[it.key];
+      if (old && old.src === "user" && src !== "user") continue; // a correction made by hand wins over the AI
+      const why = it.why || (old && old.c === c ? old.why : "");
+      if (old && old.c === c && old.why === why && old.src === src) continue;
+      A[it.key] = { c, why, src, t: Date.now() }; changed = true;
+    } else if (it.model && M[it.key] !== it.model) { M[it.key] = it.model; changed = true; }
+  }
+  if (changed) libSave(p);
+}
+function recordHistory(p) {
+  const H = p.hist || (p.hist = {}), id = String(exam.started);
+  let changed = false;
+  for (const it of exam.items) {
+    if (it.type !== "mc" || !it.key || (it.answer !== null && it.correct == null)) continue;
+    const r = it.answer !== null && it.correct === it.answer ? 1 : 0;
+    const h = H[it.key] || (H[it.key] = { topic: it.topic, r: {} });
+    if (h.r[id] !== r) { h.r[id] = r; changed = true; }
+  }
+  return changed;
+}
+const results = h => h ? Object.keys(h.r).sort().map(k => h.r[k]) : []; // oldest first
+const misses = h => results(h).filter(x => !x).length;
+// to review: the last attempt was wrong, or at least half of the attempts were
+const needsReview = h => { const r = results(h); return r.length > 0 && (r[r.length - 1] === 0 || misses(h) * 2 >= r.length); };
+function lessonStats(p) {
+  const H = p.hist || {}, g = new Map();
+  for (const q of p.questions.filter(isMc)) {
+    const t = q.topic || "Senza lezione";
+    if (!g.has(t)) g.set(t, { topic: t, n: 0, seen: 0, tries: 0, ok: 0 });
+    const e = g.get(t), r = results(H[qkey(q)]);
+    e.n++; if (r.length) { e.seen++; e.tries += r.length; e.ok += r.filter(Boolean).length; }
+  }
+  return [...g.values()].filter(e => e.tries);
+}
+/* grade trend: one point per exam, scaled to thirtieths so formats with different maxima compare */
+const TREND_N = 20, SPARK_N = 10;
+const v30 = e => Math.max(0, Math.min(30, e.r * 30));
+// library-row entry: a compact grade line plus the last grade; opens the paniere's full statistics
+function sparkHtml(p) {
+  const log = (p.stats?.log || []).slice(-SPARK_N), n = log.length;
+  if (!n && !Object.keys(p.hist || {}).length) return "";
+  let svg = "";
+  if (n >= 2) {
+    const W = 132, H = 40, P = 5, vs = log.map(v30);
+    // zoom on the grades actually obtained, always keeping 18 in view
+    const lo = Math.max(0, Math.min(...vs, 18) - 3), hi = Math.min(30, Math.max(...vs, 18) + 3);
+    const x = i => P + i * (W - 2 * P) / (n - 1), y = v => P + (hi - v) * (H - 2 * P) / (hi - lo);
+    svg = `<svg class="spark" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+      <line x1="0" x2="${W}" y1="${y(18)}" y2="${y(18)}" class="tg18"/>
+      <polyline points="${vs.map((v, i) => `${x(i)},${y(v)}`).join(" ")}"/>
+      ${vs.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="${i === n - 1 ? 4 : 2.75}" class="${v >= 18 ? "tok" : "tko"}"/>`).join("")}</svg>`;
+  }
+  const last = n ? log[n - 1] : null;
+  const aria = `Statistiche di ${recName(p)}${n ? `. Ultimi voti: ${log.map(e => e.label).join(", ")}` : ""}`;
+  return `<button class="sparkbtn" data-stats="${p.id}" aria-label="${esc(aria)}" title="${esc(n ? `Ultimi voti: ${log.map(e => e.label).join(", ")}` : "Apri le statistiche")}">
+    ${svg}<span class="sparkv">${last ? `<b class="num ${v30(last) >= 18 ? "ok" : "ko"}">${esc(last.label)}</b>` : ""}<span>Statistiche ›</span></span></button>`;
+}
+function trendHtml(p) {
+  const s = p.stats || {}, all = s.log || [];
+  if (!all.length) return "";
+  const log = all.slice(-TREND_N), n = log.length;
+  const W = 400, H = 150, L = 26, R = 10, T = 10, B = 22;
+  const x = i => n === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (n - 1);
+  const y = v => T + (30 - v) * (H - T - B) / 30;
+  const day = id => new Date(id).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+  const pts = log.map((e, i) => [x(i), y(v30(e))]);
+  const avg = arr => arr.reduce((a, e) => a + v30(e), 0) / arr.length;
+  const last5 = log.slice(-5), first = all.length - n;
+  const grid = [0, 18, 30].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${v === 18 ? "tg18" : "tg"}"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`).join("");
+  const dots = log.map((e, i) => `<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="4.5" class="${v30(e) >= 18 ? "tok" : "tko"}"><title>Simulazione ${first + i + 1} · ${esc(e.label)} · ${day(e.id)}</title></circle>`).join("");
+  const xl = n > 1 ? `<text x="${pts[0][0]}" y="${H - 6}">${day(log[0].id)}</text><text x="${pts[n - 1][0]}" y="${H - 6}" text-anchor="end">${day(log[n - 1].id)}</text>` : "";
+  const summary = `${n === 1 ? "Una simulazione" : `Ultime ${n} simulazioni`}: ultima ${esc(log[n - 1].label)}, media delle ultime ${last5.length} ${avg(last5).toFixed(1).replace(".", ",")} su 30.`;
+  const older = (s.runs || 0) > all.length ? " Le simulazioni fatte prima di questa versione non hanno lo storico dei voti e non compaiono." : "";
+  return `<section class="card stack statsec" aria-label="Andamento dei voti">
+    <div><div class="eyebrow">Andamento dei voti</div><p class="hint">${summary} Voti riportati in trentesimi; la linea tratteggiata è il 18. Ripasso errori e allenamento non sono inclusi.${n === 1 ? " Dalla prossima simulazione vedrai la linea." : ""}${older}</p></div>
+    <svg class="trend" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(summary)}">${grid}${n > 1 ? `<polyline points="${pts.map(q => q.join(",")).join(" ")}"/>` : ""}${dots}${xl}</svg>
+  </section>`;
+}
+function statsHtml(p) {
+  return trendHtml(p) + lessonsHtml(p);
+}
+function lessonsHtml(p) {
+  const rows = lessonStats(p).sort((a, b) => a.ok / a.tries - b.ok / b.tries);
+  if (!rows.length) return "";
+  const blockOf = topic => p.map ? p.map.blocks.findIndex(b => b.lessons.includes(lessonNum(topic) ?? 0)) : -1;
+  return `<section class="card stack statsec" aria-label="Andamento per lezione">
+    <div><div class="eyebrow">Come vai per lezione</div><p class="hint">Risposte giuste nelle domande chiuse che hai già incontrato nelle prove corrette. Le lezioni più deboli sono in alto${p.map ? "; «Mappa» apre il blocco da ripassare" : ""}.</p></div>
+    <div class="lstats" role="table" aria-label="Risposte giuste per lezione">
+      <div class="lrow lhead" role="row"><span role="columnheader">Lezione</span><span role="columnheader">Giuste</span><span role="columnheader">Viste</span><span role="columnheader"><span class="sr">Mappa</span></span></div>
+      ${rows.map(e => {
+        const pc = Math.round(e.ok / e.tries * 100), bi = blockOf(e.topic);
+        const col = pc < 60 ? "var(--bad)" : pc < 80 ? "var(--warn)" : "var(--ok)";
+        return `<div class="lrow" role="row"><span role="cell" class="ltopic">${esc(e.topic)}</span><span role="cell" class="lbar"><span class="track"><i style="width:${pc}%;background:${col}"></i></span><span class="num">${pc}%</span></span><span role="cell" class="num">${e.seen}/${e.n}</span><span role="cell">${bi >= 0 ? `<button class="btn ghost" data-blkmap="${bi}">Mappa</button>` : ""}</span></div>`;
+      }).join("")}
+    </div>
+  </section>`;
+}
+
+/* ---- backup of the whole library as one JSON file ---- */
+function backupHtml() {
+  return `<section class="card saved" aria-label="Backup">
+    <div style="flex:1 1 320px;display:grid;gap:4px"><div class="eyebrow">Backup</div><p class="hint">Panieri, mappe, risposte salvate e statistiche restano solo in questo browser. Esporta un backup per non perderli o per spostarli su un altro computer.</p><span class="hint" id="bkMsg" role="status"></span></div>
+    <div class="row">${library.length ? `<button class="btn" id="bkExport">Esporta backup</button>` : ""}<button class="btn" id="bkImport">Importa backup</button><input type="file" id="bkFile" accept=".json,application/json" hidden></div>
+  </section>`;
+}
+const validRecord = r => r && typeof r.id === "string" && Array.isArray(r.questions) &&
+  r.questions.every(q => q && typeof q.text === "string" && Array.isArray(q.options) && q.options.every(o => typeof o === "string"));
+async function importBackup(file, say) {
+  let data;
+  try { data = JSON.parse(await file.text()); } catch { say("Questo file non è un backup del simulatore."); return; }
+  const recs = Array.isArray(data?.panieri) ? data.panieri.filter(validRecord) : [];
+  if (!recs.length) { say("Nel file non ho trovato panieri da importare."); return; }
+  let n = 0;
+  for (const r of recs) {
+    const cur = library.find(p => p.id === r.id);
+    if (cur && (cur.used || cur.added || 0) >= (r.used || r.added || 0)) continue; // keep the more recent copy
+    await libSave(r); n++;
+  }
+  library.sort((a, b) => (b.used || b.added) - (a.used || a.added));
+  renderSetup();
+  const m = document.getElementById("bkMsg");
+  if (m) m.textContent = n ? `Importati ${n} ${n === 1 ? "paniere" : "panieri"}.` : "I panieri del backup sono già presenti, nella stessa versione o in una più recente.";
+}
+
+async function recordStats(t, max) {
+  const p = examBank(); if (!p) return;
+  let changed = recordHistory(p);
+  // review and training runs feed the per-question history, not the exam scores
+  if (!exam.review && exam.mode !== "train") {
+    const s = p.stats || (p.stats = { runs: 0, last: null, best: null });
+    const label = `${t.tot}/${max}`, ratio = max ? t.tot / max : 0;
+    if (!exam.statsSaved) { s.runs++; exam.statsSaved = true; changed = true; }
+    // one entry per exam, updated in place when the grade changes (e.g. a manual correction)
+    const log = s.log || (s.log = []), e = log.find(x => x.id === exam.started);
+    if (!e) { log.push({ id: exam.started, r: ratio, label }); changed = true; }
+    else if (e.label !== label) { e.r = ratio; e.label = label; changed = true; }
+    if (exam.statsLabel !== label) {
+      exam.statsLabel = label; s.last = label; changed = true;
+      if (s.best == null || ratio > (s.bestRatio ?? -1)) { s.best = label; s.bestRatio = ratio; }
+    }
+  }
+  if (changed) { save(); await libSave(p); }
+}
+
+/* ========== setup view ========== */
+const GROUP_DESC = "Intermedia 24 · finale 7 · unico 31 · 45 minuti";
+// the same page hosted on claude.ai, where grading and maps can use the viewer's Claude account
+const CLAUDE_URL = "https://claude.ai/artifact/82WfSbLV5ZHPM3FW9whLbn";
+const UNIS = [
+  { id: "ecampus", name: "eCampus", desc: "24 domande a risposta multipla + 2 aperte · 60 minuti", ready: true, formats: ECAMPUS_FORMATS },
+  // Same group, same exam rules. Kept disabled until a real paniere has been checked.
+  { id: "pegaso", name: "Pegaso", desc: GROUP_DESC, ready: false, formats: GROUP_FORMATS },
+  { id: "mercatorum", name: "Mercatorum", desc: GROUP_DESC, ready: false, formats: GROUP_FORMATS },
+  { id: "sanraffaele", name: "San Raffaele", desc: GROUP_DESC, ready: false, formats: GROUP_FORMATS },
+];
+let uni = "ecampus", fmtId = "std";
+const curUni = () => UNIS.find(u => u.id === uni) || UNIS[0];
+const curFmt = () => curUni().formats.find(f => f.id === fmtId) || curUni().formats[0];
+const lessonsOf = qs => [...new Set(qs.map(q => q.topic).filter(Boolean))];
+let setupMsg = "", setupErr = false, parsing = "";
+
+function renderSetup() {
+  view = "setup";
+  const resumable = store.get(LS_EXAM);
+  let body = "";
+  if (!bank) {
+    body = `
+      <div class="card stack">
+        <label class="drop" id="drop" for="file">
+          <strong>Carica il paniere in PDF</strong>
+          <span class="muted">Trascina qui il file oppure scegli dal computer</span>
+          <span class="btn primary" aria-hidden="true">Scegli file PDF</span>
+          <input type="file" id="file" accept="application/pdf,.pdf" hidden>
+        </label>
+        <p class="note"><b>Usa il paniere originale</b>, così come lo scarichi dalla piattaforma. Non caricare PDF diversi o panieri già compilati con risposte, crocette o appunti: verrebbero letti male e la simulazione potrebbe contenere domande sbagliate.</p>
+        ${parsing ? `<div class="status"><span class="spin"></span><span>${esc(parsing)}</span></div>` : ""}
+        ${setupMsg ? `<p class="note ${setupErr ? "err" : ""}">${esc(setupMsg)}</p>` : ""}
+        ${pending ? `<div class="confirm" role="alert">
+          <strong>Questo paniere potrebbe essere stato modificato</strong>
+          <p>Ho trovato delle differenze: ${esc(pending.issues.join("; "))}. Di solito succede con panieri che contengono risposte, crocette o appunti: alcune domande potrebbero essere lette male.</p>
+          <div class="row"><button class="btn" id="pendingGo">Continua comunque</button><button class="btn ghost" id="pendingNo">Carica un altro file</button></div>
+        </div>` : ""}
+
+      </div>`;
+  } else {
+    const mc = bank.questions.filter(isMc).length;
+    const op = bank.questions.length - mc;
+    const les = lessonsOf(bank.questions);
+    const opts = les.map((l, i) => `<option value="${i}">${esc(l)}</option>`).join("");
+    const cov = coverage(bank), rev = reviewList(bank.questions).length;
+    body = `
+      <div class="card stack">
+        <div class="summary">
+          <div class="eyebrow">Paniere caricato</div>
+          <div class="course">${esc(recName(bank))}</div>
+          <div class="chips"><span class="chip"><b>${mc}</b> a risposta multipla</span><span class="chip"><b>${op}</b> a risposta aperta</span>${les.length ? `<span class="chip"><b>${les.length}</b> lezioni</span>` : ""}<span class="chip"><b>${cov}</b> risposte salvate</span>${bank.flagged ? `<span class="chip" style="background:var(--warn-soft);color:var(--warn)">Letto con differenze</span>` : ""}</div>
+        </div>
+        ${curUni().formats.length > 1 ? `<fieldset>
+          <legend>Tipo di prova</legend>
+          <div class="modes three">${curUni().formats.map(fm => `<label class="mode"><input type="radio" name="fmt" id="fmt-${fm.id}" value="${fm.id}" ${fm.id === curFmt().id ? "checked" : ""}><span class="t">${esc(fm.label)}</span><span class="d">${esc(fm.desc)}</span></label>`).join("")}</div>
+        </fieldset>` : ""}
+        <fieldset>
+          <legend>Modalità</legend>
+          <div class="modes three">
+            <label class="mode"><input type="radio" name="mode" id="mode-timed" value="timed" checked><span class="t">A tempo · ${curFmt().minutes} minuti</span><span class="d">Come all'esame: allo scadere la prova viene consegnata da sola.</span></label>
+            <label class="mode"><input type="radio" name="mode" id="mode-free" value="free"><span class="t">Senza limite di tempo</span><span class="d">Per ripassare con calma. Il cronometro segna solo il tempo trascorso.</span></label>
+            <label class="mode"><input type="radio" name="mode" id="mode-train" value="train"><span class="t">Allenamento</span><span class="d">${cov ? `Vedi subito se hai risposto giusto, sulle ${cov} domande con risposta salvata.` : "Vedi subito se hai risposto giusto: funziona sulle domande già corrette in una prova precedente."} Senza limite di tempo.</span></label>
+          </div>
+        </fieldset>
+        ${rev ? `<fieldset>
+          <legend>Domande</legend>
+          <div class="modes">
+            <label class="mode"><input type="radio" name="pick" value="all" checked><span class="t">Tutto il paniere</span><span class="d">Estrazione casuale, come all'esame.</span></label>
+            <label class="mode"><input type="radio" name="pick" value="review"><span class="t">Ripasso errori · ${rev}</span><span class="d">Solo le domande chiuse che hai sbagliato o lasciato vuote, prima quelle sbagliate più spesso.</span></label>
+          </div>
+        </fieldset>` : ""}
+        ${les.length > 1 ? `<fieldset><legend>Lezioni da includere</legend>
+          <div class="range"><span>da</span><select id="from">${opts}</select><span>a</span><select id="to">${opts}</select></div>
+          <p class="hint" id="rangeInfo"></p>${curFmt().tip ? `<p class="hint">${esc(curFmt().tip)}</p>` : ""}</fieldset>` : ""}
+        <div class="row"><button class="btn primary" id="start">Inizia la simulazione</button><button class="btn" id="openMap">${bank.map ? "Apri la mappa concettuale" : "Crea la mappa concettuale"}</button>${mdButton(bank)}<button class="btn ghost" id="change">Cambia paniere</button></div>
+        ${setupMsg ? `<p class="note ${setupErr ? "err" : ""}">${esc(setupMsg)}</p>` : ""}
+      </div>`;
+  }
+  app.innerHTML = `
+    <header class="top">
+      <div class="eyebrow">Strumento di studio</div>
+      <h1>Simulazione d'esame</h1>
+      <p class="lede">Carica il paniere del tuo corso: la pagina estrae a caso 24 domande a risposta multipla e 2 aperte, come all'esame eCampus, e alla consegna puoi farla correggere ${window.claude ? "da Claude, " : ""}da Gemini (o da un altro chatbot) oppure correggerla tu. Ogni voto resta modificabile.</p>
+      ${window.claude ? "" : `<aside class="claudecta" aria-label="Versione con Claude">
+        <div><strong>Hai un account Claude?</strong> Apri la stessa pagina su claude.ai: la prova si corregge con un clic e Claude scrive anche la mappa concettuale. Va bene anche il piano gratuito, nei limiti di utilizzo del tuo account.
+        <span class="hint">Panieri e voti salvati qui non passano da soli all'altra versione: usa «Esporta backup» e poi «Importa backup».</span></div>
+        <a class="btn primary" href="${CLAUDE_URL}" target="_blank" rel="noopener">Apri su claude.ai ↗</a>
+      </aside>`}
+    </header>
+    <div class="stack">
+      ${UNIS.filter(u => u.ready).length > 1 ? `<section class="stack" style="gap:10px" aria-label="Università">
+        <div class="eyebrow">Scegli la tua università</div>
+        <div class="unigrid">${UNIS.map(u => `<button class="uni" data-uni="${u.id}" aria-pressed="${uni === u.id}" ${u.ready ? "" : "disabled"}><span class="n">${esc(u.name)}</span><span class="d">${esc(u.desc)}</span>${u.ready ? "" : `<span class="soon">Coming soon</span>`}</button>`).join("")}</div>
+      </section>` : ""}
+      ${body}
+      ${bank ? statsHtml(bank) : libraryHtml() + backupHtml()}
+      ${resumable && !resumable.submitted ? `<div class="card saved"><div><div class="eyebrow">Prova in corso</div><div>${esc(resumable.course)} · ${MODE_LABEL[resumable.mode] || "senza limite"}${resumable.review ? " · ripasso errori" : ""}</div></div><button class="btn primary" id="resume">Riprendi</button></div>` : ""}
+      ${formatGrid(curFmt())}
+    </div>`;
+  bindSetup();
+}
+
+function formatGrid(F) {
+  const ord = F.lode ? F.mc - 1 : F.mc;
+  const cells = [`<div><span class="big">${ord} × 1</span><span class="lbl">Risposta multipla: 1 punto se giusta, 0 se sbagliata o vuota</span></div>`];
+  if (F.open) cells.push(`<div><span class="big">${F.open} × 1–3</span><span class="lbl">Risposta aperta: da 1 a 3 punti in base alla completezza</span></div>`);
+  if (F.lode) cells.push(`<div><span class="big">+1 lode</span><span class="lbl">L'ultima domanda vale per la lode solo se hai risposto giusto a tutte le altre${F.id === "finale" ? " (intermedia compresa)" : ""}</span></div>`);
+  cells.push(`<div><span class="big">${F.max}</span><span class="lbl">Punteggio massimo · ${esc(F.passText)}</span></div>`);
+  return `<div class="format" style="--cols:${cells.length}" aria-label="Struttura della prova">${cells.join("")}</div>`;
+}
+
+function bindSetup() {
+  app.querySelectorAll("[data-uni]").forEach(b => b.onclick = () => { const u = UNIS.find(u => u.id === b.dataset.uni); if (u?.ready) { uni = u.id; fmtId = u.formats[0].id; renderSetup(); } });
+  app.querySelectorAll('input[name="fmt"]').forEach(r => r.onchange = () => { fmtId = r.value; renderSetup(); });
+  const file = document.getElementById("file");
+  const drop = document.getElementById("drop");
+  if (file) file.onchange = () => file.files[0] && handleFile(file.files[0]);
+  if (drop) {
+    ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+    ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+    drop.addEventListener("drop", e => { const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
+  }
+  const pg = document.getElementById("pendingGo");
+  if (pg) pg.onclick = async () => { const p = pending; pending = null; await acceptBank(p.res, p.name, true); renderSetup(); };
+  const pn = document.getElementById("pendingNo");
+  if (pn) pn.onclick = () => { pending = null; renderSetup(); document.getElementById("file")?.click(); };
+  bindLibrary();
+  const bkMsg = t => { const m = document.getElementById("bkMsg"); if (m) m.textContent = t; };
+  const bf = document.getElementById("bkFile");
+  if (bf) bf.onchange = () => bf.files[0] && importBackup(bf.files[0], bkMsg);
+  const bi = document.getElementById("bkImport");
+  if (bi) bi.onclick = () => bf.click();
+  const be = document.getElementById("bkExport");
+  if (be) be.onclick = () => offerFile(`backup-simulatore-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ app: "simesame", v: 1, exported: Date.now(), panieri: library }), bkMsg);
+  app.querySelectorAll("[data-blkmap]").forEach(b => b.onclick = () => { openMap(); document.getElementById("blk-" + b.dataset.blkmap)?.scrollIntoView({ block: "start" }); });
+  const om = document.getElementById("openMap");
+  if (om) om.onclick = openMap;
+  const ch = document.getElementById("change");
+  if (ch) ch.onclick = () => { bank = null; setupMsg = ""; renderSetup(); };
+  const rs = document.getElementById("resume");
+  if (rs) rs.onclick = () => { exam = store.get(LS_EXAM); if (exam.grading || exam.submitted) renderResults(); else renderExam(); };
+  const from = document.getElementById("from"), to = document.getElementById("to");
+  if (from && to) {
+    to.value = String(to.options.length - 1);
+    const upd = () => {
+      const { mc, op, review } = pool();
+      document.getElementById("rangeInfo").textContent = `${mc.length} domande a risposta multipla e ${op.length} aperte nell'intervallo scelto${review.length ? `, di cui ${review.length} da ripassare` : ""}.`;
+    };
+    from.onchange = to.onchange = upd; upd();
+  }
+  const st = document.getElementById("start");
+  if (st) st.onclick = startExam;
+}
+
+function pool() {
+  const les = lessonsOf(bank.questions);
+  const f = document.getElementById("from"), t = document.getElementById("to");
+  let keep = null;
+  if (f && t && les.length > 1) {
+    let a = +f.value, b = +t.value; if (a > b) [a, b] = [b, a];
+    keep = new Set(les.slice(a, b + 1));
+  }
+  const seen = new Set();
+  const qs = bank.questions.filter(q => {
+    if (keep && !keep.has(q.topic)) return false;
+    const k = norm(q.text) + "|" + q.options.map(norm).sort().join("|");
+    if (seen.has(k)) return false; seen.add(k); return true;
+  });
+  return { mc: qs.filter(isMc), op: qs.filter(q => !isMc(q)), review: reviewList(qs) };
+}
+// some panieri repeat an option word for word: show it once, or picking the "other" copy would count as wrong
+// shown under questions whose options differ from the usual four because of the source PDF
+const SHORT_NOTE = {
+  dup: n => `Nel paniere originale due risposte di questa domanda sono identiche: qui la vedi una volta sola, quindi le risposte sono ${n}.`,
+  few: n => `Nel paniere originale questa domanda ha solo ${n} risposte: non è un errore del simulatore.`,
+};
+const uniqOptions = opts => { const s = new Set(); return opts.filter(o => { const k = norm(o); if (s.has(k)) return false; s.add(k); return true; }); };
+const MODE_LABEL = { timed: "a tempo", free: "senza limite", train: "allenamento" };
+// closed questions to review, most-missed first (ties in random order)
+function reviewList(qs) {
+  const H = bank.hist || {}, seen = new Set();
+  return shuffle(qs.filter(q => {
+    if (!isMc(q)) return false;
+    const k = qkey(q); if (seen.has(k)) return false; seen.add(k);
+    return needsReview(H[k]);
+  })).map(q => { const h = H[qkey(q)], r = results(h); return { q, w: misses(h) + (r[r.length - 1] === 0 ? 2 : 0) }; })
+    .sort((a, b) => b.w - a.w).map(x => x.q);
+}
+
+let pending = null; // a paniere that failed the checks, waiting for "Continua comunque"
+function checkPaniere(res) {
+  const mc = res.questions.filter(isMc);
+  const op = res.questions.length - mc.length;
+  const issues = [];
+  if (res.declared.mc != null && res.declared.mc !== mc.length) issues.push(`il paniere dichiara ${res.declared.mc} domande a risposta multipla, ne ho lette ${mc.length}`);
+  if (res.declared.open != null && res.declared.open !== op) issues.push(`dichiara ${res.declared.open} domande aperte, ne ho lette ${op}`);
+  const odd = mc.filter(q => q.options.length !== 4).length; // repeated options come from the original paniere: not a reading error
+  // originals can have a stray question with 3 options; when the declared counts match, only many of them are suspicious
+  const countsOk = !issues.length && res.declared.mc != null;
+  if (odd > (countsOk ? Math.max(2, Math.round(mc.length / 100)) : 0)) issues.push(`${odd} ${odd === 1 ? "domanda ha" : "domande hanno"} un numero di opzioni diverso da 4`);
+  return issues;
+}
+async function acceptBank(res, name, flagged = false) {
+  // same course with the same number of questions: update that entry instead of adding a duplicate
+  let p = library.find(x => x.course && x.course === res.course && x.questions.length === res.questions.length);
+  if (p) { p.questions = res.questions; p.fileName = name; p.flagged = flagged; p.used = Date.now(); }
+  else p = newRecord({ course: res.course, fileName: name, questions: res.questions, flagged });
+  bank = p;
+  await libSave(p);
+  const mc = res.questions.filter(isMc).length;
+  if (mc < curFmt().mc || res.questions.length - mc < curFmt().open) { setupMsg = `Il paniere ha solo ${mc} domande chiuse e ${res.questions.length - mc} aperte: la simulazione userà quelle disponibili.`; setupErr = false; }
+}
+async function handleFile(f) {
+  setupMsg = ""; setupErr = false; pending = null; parsing = "Lettura del PDF…"; renderSetup();
+  try {
+    const res = await readPdf(f, (p, n) => { const el = document.querySelector(".status span:last-child"); if (el) el.textContent = `Lettura del PDF… pagina ${p} di ${n}`; });
+    parsing = "";
+    const name = f.name.replace(/\.pdf$/i, "");
+    if (!res.isPaniere || !res.questions.length) {
+      setupMsg = res.questions.length || res.isPaniere
+        ? "Questo PDF non sembra un paniere eCampus: manca l'intestazione «Set Domande» oppure non contiene domande numerate. Carica il paniere originale scaricato dalla piattaforma."
+        : "Non ho trovato domande in questo PDF. Carica il paniere originale scaricato dalla piattaforma, con testo selezionabile (non una scansione).";
+      setupErr = true; renderSetup(); return;
+    }
+    const issues = checkPaniere(res);
+    if (issues.length) { pending = { res, name, issues }; renderSetup(); return; }
+    await acceptBank(res, name);
+    renderSetup();
+  } catch (e) {
+    parsing = ""; setupMsg = "Non riesco a leggere il file. Controlla che sia un PDF con testo selezionabile (non una scansione)."; setupErr = true; renderSetup();
+    console.error(e);
+  }
+}
+
+function startExam() {
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const review = document.querySelector('input[name="pick"]:checked')?.value === "review";
+  const P = pool();
+  const F = curFmt();
+  if (review ? !P.review.length : !P.mc.length && !P.op.length) { setupMsg = review ? "Nessuna domanda da ripassare nell'intervallo di lezioni scelto." : "Nessuna domanda nell'intervallo di lezioni scelto."; setupErr = true; renderSetup(); return; }
+  // a review run is only the closed questions to review, most-missed first
+  const items = [
+    ...(review ? P.review : shuffle(P.mc)).slice(0, F.mc).map(q => { const u = uniqOptions(q.options); return { type: "mc", key: qkey(q), topic: q.topic, text: q.text, options: shuffle(u), answer: null, short: u.length < q.options.length ? "dup" : u.length < 4 ? "few" : null }; }),
+    ...(review ? [] : shuffle(P.op).slice(0, F.open).map(q => ({ type: "open", key: qkey(q), topic: q.topic, text: q.text, answer: "" }))),
+  ];
+  if (mode === "train") items.forEach(it => { if (it.type !== "mc") return; const k = knownIndex(bank, it); if (k >= 0) { it.known = k; it.knownWhy = bank.answers[it.key].why || ""; } });
+  pasteDraft = pasteMsg = copyMsg = "";
+  if (F.lode && !review) { const mcs = items.filter(x => x.type === "mc"); if (mcs.length === F.mc) mcs[mcs.length - 1].lode = true; }
+  exam = { course: bank.course || recName(bank), bankId: bank.id, uni: curUni().name, fmt: F, mode, review, started: Date.now(), deadline: mode === "timed" ? Date.now() + F.minutes * 60e3 : null, items, cur: 0, flags: [], submitted: false };
+  store.set(LS_EXAM, exam);
+  getSample(); // resolve early; asks nothing
+  renderExam();
+  window.scrollTo(0, 0);
+}
+
+/* ========== concept map (generated per paniere, saved in the library record as p.map) ========== */
+let mapMsg = {}, mapDraft = {}, mapBusy = "", mapConfirmReset = false;
+const lessonNum = topic => { const m = String(topic || "").match(/(\d+)/); return m ? +m[1] : null; };
+function lessonGroups(qs) {
+  const g = new Map();
+  qs.forEach(q => { const n = lessonNum(q.topic) ?? 0; if (!g.has(n)) g.set(n, []); g.get(n).push(q); });
+  return [...g.entries()].sort((a, b) => a[0] - b[0]);
+}
+// Prompts stay small enough for one chat message: blocks with many questions send an evenly spread sample.
+const MAP_MAX_MC = 120, MAP_PARALLEL = 3;
+const spread = (list, n) => list.length <= n ? list : Array.from({ length: n }, (_, k) => list[Math.floor(k * list.length / n)]);
+const uniqTexts = list => { const s = new Set(); return list.filter(q => { const k = norm(q.text); if (s.has(k)) return false; s.add(k); return true; }); };
+const rangesLabel = nums => {
+  if (!nums.length) return "";
+  const s = [...nums].sort((a, b) => a - b), out = [];
+  let a = s[0], p = s[0];
+  for (const n of s.slice(1).concat([Infinity])) { if (n === p + 1) { p = n; continue; } out.push(a === p ? `${a}` : `${a}–${p}`); a = p = n; }
+  return (s.length > 1 ? "Lezioni " : "Lezione ") + out.join(", ");
+};
+const rich = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>");
+const plain = s => String(s || "").replace(/\*\*|__|`/g, "").trim();
+
+function structurePrompt() {
+  const course = bank.course || recName(bank);
+  const lines = lessonGroups(bank.questions).map(([n, qs]) => {
+    const sample = uniqTexts(qs).slice(0, 4).map(q => "  - " + q.text.slice(0, 150)).join("\n");
+    return `Lezione ${n} (${qs.length} domande)\n${sample}`;
+  }).join("\n\n");
+  return `Sei il docente del corso universitario "${course}". Qui sotto trovi l'elenco delle lezioni del corso, ognuna con alcune domande d'esame di esempio.
+
+Raggruppa le lezioni CONSECUTIVE in 4-8 blocchi tematici, per costruire una mappa concettuale che aiuti lo studente a studiare. Ogni lezione deve stare in un solo blocco e tutte le lezioni devono essere coperte.
+
+COME RISPONDERE: testo semplice, senza tabelle, senza introduzioni o conclusioni, esattamente in questo formato:
+
+CENTRO: il concetto centrale del corso (massimo 3 parole)
+SOTTOTITOLO: 3 parole chiave separate da ·
+FILO LOGICO: una frase che spiega come i blocchi si collegano tra loro
+
+BLOCCO 1: titolo breve (massimo 4 parole)
+Lezioni: 1-8
+Descrizione: una frase su cosa copre il blocco
+Parole chiave: 4 voci brevi separate da punto e virgola
+
+BLOCCO 2: …
+
+LEZIONI DEL CORSO:
+
+${lines}`;
+}
+function blockPrompt(i) {
+  const m = bank.map, b = m.blocks[i];
+  const set = new Set(b.lessons);
+  const qs = uniqTexts(bank.questions.filter(q => set.has(lessonNum(q.topic) ?? 0)));
+  const allMc = qs.filter(isMc), op = qs.filter(q => !isMc(q));
+  const mc = spread(allMc, MAP_MAX_MC);
+  return `Sei il docente del corso universitario "${bank.course || recName(bank)}". Stai scrivendo una mappa concettuale per lo studio. Questo è il blocco ${i + 1} di ${m.blocks.length}: "${b.title}" (${rangesLabel(b.lessons)}).
+
+Qui sotto ci sono ${mc.length < allMc.length ? `${mc.length} delle ${allMc.length} domande a risposta multipla (un campione distribuito su tutte le lezioni) e tutte le domande aperte` : "tutte le domande d'esame"} di questo blocco. Ricava ciò che lo studente deve sapere per rispondere.
+
+COME RISPONDERE: testo semplice, senza tabelle, senza introduzioni o conclusioni, esattamente con queste tre sezioni. Metti in **grassetto** i termini chiave.
+
+IN BREVE:
+- da 3 a 5 punti con le cose più importanti da sapere
+
+CONCETTI:
+- Nome del concetto: spiegazione di 2-3 frasi
+(da 5 a 8 concetti)
+
+DOMANDE APERTE:
+- Domanda: testo della domanda aperta
+  Traccia: traccia di risposta in 2-4 frasi
+(scegli le ${Math.min(6, op.length) || 3} domande aperte più importanti${op.length ? " tra quelle elencate" : ""})
+
+DOMANDE A RISPOSTA MULTIPLA DEL BLOCCO:
+${mc.map(q => "- " + q.text).join("\n") || "(nessuna)"}
+
+DOMANDE APERTE DEL BLOCCO:
+${op.map(q => "- " + q.text).join("\n") || "(nessuna)"}`;
+}
+
+function parseStructure(text) {
+  const t = String(text || "").replace(/\r/g, "").replace(/\*\*|__|`|#+ ?/g, "");
+  const fld = (src, name, stops) => { const m = src.match(new RegExp(name + "\\s*:\\s*([\\s\\S]*?)(?=\\n|" + stops + "|$)", "i")); return m ? m[1].trim() : ""; };
+  const STOPS = "Lezioni\\s*:|Lezione\\s*:|Descrizione\\s*:|Parole chiave\\s*:|BLOCCO\\s*\\d|SOTTOTITOLO\\s*:|FILO LOGICO\\s*:";
+  const heads = [...t.matchAll(/BLOCCO\s*(\d+)\s*[:.\-–—)]\s*/gi)];
+  if (heads.length < 2) throw new Error("blocks");
+  const blocks = heads.map((h, k) => {
+    const chunk = t.slice(h.index + h[0].length, k + 1 < heads.length ? heads[k + 1].index : t.length);
+    const title = plain(chunk.split(/\n|Lezioni?\s*:/i)[0]).replace(/[.:]$/, "");
+    const lesTxt = fld(chunk, "Lezion[ei]", STOPS);
+    const lessons = [];
+    lesTxt.replace(/(\d+)\s*(?:[-–—]|a|fino a)\s*(\d+)|(\d+)/g, (_, a, b, c) => { if (c) lessons.push(+c); else for (let n = +a; n <= +b && n - +a < 400; n++) lessons.push(n); return ""; });
+    const keys = fld(chunk, "Parole chiave", STOPS).split(/[;·]|,(?![^(]*\))/).map(plain).filter(Boolean).slice(0, 4);
+    return { title: title || `Blocco ${k + 1}`, lessons, desc: plain(fld(chunk, "Descrizione", STOPS)), keys, content: null };
+  }).filter(b => b.lessons.length);
+  if (blocks.length < 2) throw new Error("lessons");
+  // every lesson of the paniere in exactly one block, in order
+  const all = lessonGroups(bank.questions).map(([n]) => n);
+  const seen = new Set();
+  blocks.forEach(b => { b.lessons = [...new Set(b.lessons)].filter(n => all.includes(n) && !seen.has(n) && seen.add(n)); });
+  const kept = blocks.filter(b => b.lessons.length);
+  if (kept.length < 2) throw new Error("lessons"); // lesson numbers in the reply do not match the paniere
+  all.filter(n => !seen.has(n)).forEach(n => {
+    let best = kept[0];
+    kept.forEach(b => { if (Math.min(...b.lessons) <= n) best = b; });
+    best.lessons.push(n);
+  });
+  kept.forEach(b => b.lessons.sort((a, c) => a - c));
+  kept.sort((a, c) => a.lessons[0] - c.lessons[0]);
+  return {
+    center: plain(fld(t, "CENTRO", STOPS)) || (bank.course || "Corso"),
+    subtitle: plain(fld(t, "SOTTOTITOLO", STOPS)),
+    thread: plain(fld(t, "FILO LOGICO", STOPS)),
+    blocks: kept, created: Date.now(),
+  };
+}
+function parseBlock(text) {
+  const out = { tldr: [], concepts: [], open: [] };
+  let sec = null, cur = null;
+  for (let raw of String(text || "").replace(/\r/g, "").split("\n")) {
+    const bare = raw.replace(/\*\*|__|#+/g, "").trim();
+    if (!bare) continue;
+    // section header, possibly followed by its first item on the same line ("IN BREVE: - …")
+    const hd = bare.match(/^(in breve|da sapere|concetti(?:\s+chiave)?|domande aperte)\s*:?\s*(.*)$/i);
+    if (hd && (!hd[2] || /^[-•*]\s/.test(hd[2]) || /:\s*$/.test(bare.slice(0, hd[1].length + 2)))) {
+      sec = /^concetti/i.test(hd[1]) ? "concepts" : /^domande/i.test(hd[1]) ? "open" : "tldr";
+      if (!hd[2]) continue;
+      raw = hd[2];
+    }
+    if (!sec) continue;
+    let line = raw.trim().replace(/^(?:[-•*]|\d+[.)])\s+/, "").trim();
+    if (sec === "tldr") { out.tldr.push(line); continue; }
+    if (sec === "concepts") {
+      const m = line.match(/^\*{0,2}([^:*]{2,90}?)\*{0,2}\s*:\s*\*{0,2}\s*([\s\S]+)$/);
+      if (m) out.concepts.push([plain(m[1]), m[2].trim()]);
+      else if (out.concepts.length) out.concepts[out.concepts.length - 1][1] += " " + line;
+      continue;
+    }
+    const lb = line.replace(/\*\*/g, "");
+    const dq = lb.match(/^domanda\s*:\s*(.+)$/i), tr = lb.match(/^traccia\s*:\s*(.+)$/i);
+    if (dq) { cur = [dq[1].trim(), ""]; out.open.push(cur); }
+    else if (tr && cur) cur[1] = tr[1].trim();
+    else if (cur) cur[1] += (cur[1] ? " " : "") + line;
+  }
+  out.open = out.open.filter(o => o[1]);
+  if (!out.tldr.length && !out.concepts.length) throw new Error("empty");
+  return out;
+}
+
+/* ---- SVG concept map ---- */
+function wrapText(s, max) {
+  const words = s.split(/\s+/), lines = [""];
+  for (const w of words) { const l = lines[lines.length - 1]; if ((l + " " + w).trim().length <= max) lines[lines.length - 1] = (l + " " + w).trim(); else lines.push(w); }
+  if (lines.length > 2) { lines.length = 2; lines[1] = lines[1].slice(0, max - 1) + "…"; }
+  return lines;
+}
+const clip = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+function mapSvg(m) {
+  const n = m.blocks.length, top = Math.ceil(n / 2), rows = [m.blocks.slice(0, top), m.blocks.slice(top)];
+  const W = 1000, H = 640, cx = 500, cy = 320;
+  let lines = "", nodes = "";
+  rows.forEach((row, r) => {
+    const k = row.length, gap = 22, w = Math.min(230, (W - 60 - (k - 1) * gap) / k);
+    const total = k * w + (k - 1) * gap, x0 = (W - total) / 2;
+    row.forEach((b, j) => {
+      const i = r === 0 ? j : top + j, x = x0 + j * (w + gap), y = r === 0 ? 30 : 440, h = 76, col = `var(--m${i % 8 + 1})`;
+      const nx = x + w / 2, ny = r === 0 ? y + h : y;
+      lines += `<path d="M${cx} ${cy} C ${cx + (nx - cx) * 0.2} ${cy + (ny - cy) * 0.6}, ${nx} ${ny + (r === 0 ? 60 : -60)}, ${nx} ${ny}"/>`;
+      const tl = wrapText(`${i + 1} · ${b.title}`, Math.floor(w / 9.6));
+      const ty = tl.length > 1 ? [y + 25, y + 44] : [y + 32];
+      nodes += `<a href="#" data-goblk="${i}" aria-label="Vai al blocco ${i + 1}: ${esc(b.title)}"><rect class="nd" x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="var(--surface)" stroke="${col}" stroke-width="2" ${b.content ? "" : 'stroke-dasharray="6 5"'}/>
+        ${tl.map((s, q) => `<text x="${x + 14}" y="${ty[q]}" class="node-t" style="fill:${col}">${esc(s)}</text>`).join("")}
+        <text x="${x + 14}" y="${y + h - 12}" class="node-s">${esc(clip(rangesLabel(b.lessons), Math.floor((w - 24) / 6.7)))}</text></a>`;
+      const ly = y + h + 24, maxc = Math.floor(w / 7);
+      b.keys.slice(0, r === 0 ? 3 : 4).forEach((kw, q) => { nodes += `<text x="${x}" y="${ly + q * 19}" class="leaf"><title>${esc(kw)}</title>${esc(clip(kw, maxc))}</text>`; });
+    });
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="maptitle"><title id="maptitle">Mappa concettuale: ${esc(m.center)} collegato a ${n} blocchi</title>
+    <g stroke="var(--line)" stroke-width="2" fill="none">${lines}</g>
+    <g><rect x="${cx - 120}" y="${cy - 36}" width="240" height="72" rx="36" fill="var(--ink)"/>
+      <text x="${cx}" y="${cy - 3}" text-anchor="middle" class="center-t">${esc(clip(m.center, 22))}</text>
+      ${m.subtitle ? `<text x="${cx}" y="${cy + 19}" text-anchor="middle" class="center-s">${esc(clip(m.subtitle, 40))}</text>` : ""}</g>
+    ${nodes}</svg>`;
+}
+
+/* ---- generation panels ---- */
+function genPanel(key, title, intro, withClaude, claudeLabel) {
+  return `<div class="card stack genp" id="gen-${key}">
+    <div><div class="eyebrow">${esc(title)}</div><p class="hint" style="margin-top:4px">${esc(intro)}</p></div>
+    ${withClaude && sampleFn ? `<div class="row"><button class="btn primary" data-mclaude="${key}" ${mapBusy ? "disabled" : ""}>${esc(claudeLabel)}</button><span class="hint">Usa i messaggi del tuo account Claude.</span></div>
+    <div class="hint">Oppure con Gemini, senza account Claude:</div>` : ""}
+    <ol class="steps">
+      <li><button class="btn ${withClaude && sampleFn ? "" : "primary"}" data-mcopy="${key}">Copia il testo per Gemini</button> <span class="hint" id="mcmsg-${key}"></span></li>
+      <li>Apri <a href="https://gemini.google.com/app" target="_blank" rel="noopener">gemini.google.com</a>, incolla il testo e invialo.</li>
+      <li>Copia tutta la risposta e incollala qui sotto.</li>
+    </ol>
+    <textarea id="mpaste-${key}" placeholder="Incolla qui la risposta di Gemini…" style="min-height:110px;font-family:var(--f-mono);font-size:.85rem">${esc(mapDraft[key] || "")}</textarea>
+    <div class="row"><button class="btn primary" data-mapply="${key}">Applica</button>${mapMsg[key] ? `<span class="hint" role="status">${esc(mapMsg[key])}</span>` : ""}</div>
+  </div>`;
+}
+const promptFor = key => key === "structure" ? structurePrompt() : blockPrompt(+key.slice(1));
+function applyMapText(key, text) {
+  if (key === "structure") { bank.map = parseStructure(text); }
+  else { const i = +key.slice(1); bank.map.blocks[i].content = parseBlock(text); }
+  libSave(bank);
+}
+// Run fn over items, at most `limit` at a time; stop taking new items after the first error, then rethrow it.
+async function runLimited(items, limit, fn) {
+  let next = 0, err = null;
+  const worker = async () => { while (!err && next < items.length) { try { await fn(items[next++]); } catch (e) { err = err || e; } } };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  if (err) throw err;
+}
+async function claudeMap(key) {
+  const s = await getSample(); if (!s || mapBusy) return;
+  const busy = msg => { mapBusy = msg; renderMap(); };
+  const ask = async k => {
+    const r = await s(promptFor(k), { modelTier: "default" });
+    applyMapText(k, r.text);
+    if (k[0] === "b") { delete mapDraft[k]; delete mapDraft["redo" + k.slice(1)]; }
+  };
+  let msgKey = key;
+  try {
+    if (key === "structure") { busy("Claude sta preparando la struttura della mappa…"); await ask("structure"); }
+    if (key === "structure" || key === "all") {
+      msgKey = "all"; // the structure panel is gone once the map exists: report block errors next to "Completa"
+      const blocks = bank.map.blocks, todo = blocks.map((b, i) => b.content ? -1 : i).filter(i => i >= 0);
+      const progress = () => busy(`Claude sta scrivendo i blocchi, ${Math.min(MAP_PARALLEL, todo.length)} alla volta: ${blocks.filter(b => b.content).length} di ${blocks.length} completati…`);
+      progress();
+      await runLimited(todo, MAP_PARALLEL, async i => { await ask("b" + i); progress(); });
+    } else { busy(`Claude sta scrivendo il blocco ${+key.slice(1) + 1}…`); await ask(key); }
+    mapMsg = {};
+  } catch (e) {
+    mapMsg[msgKey] = e && e.code === "rate_limited" ? "Troppe richieste a Claude: riprova tra qualche minuto, oppure continua con Gemini." :
+      e && (e.code === "not_granted" || e.code === "not_declared") ? "Non hai autorizzato Claude. Puoi continuare con Gemini." :
+      "Claude non è riuscito a completare questo passaggio. Riprova oppure usa Gemini.";
+  }
+  mapBusy = ""; renderMap();
+}
+
+/* ---- map view ---- */
+function renderMap() {
+  view = "map"; clearInterval(tick);
+  const m = bank.map;
+  const done = m ? m.blocks.filter(b => b.content).length : 0;
+  const head = `<header class="top">
+      <div class="eyebrow">Mappa concettuale · ${esc(recName(bank))}</div>
+      <h1>${m ? esc(m.center) : "Crea la mappa concettuale"}</h1>
+      <p class="lede">${m ? esc(m.thread || "Tocca un blocco per andare alla sua sintesi.") : `La mappa raggruppa le ${bank.questions.length} domande del paniere in blocchi tematici e per ognuno scrive la sintesi, i concetti chiave e le tracce delle domande aperte.`}</p>
+      <div class="row"><button class="btn" id="mapBack">← Torna al simulatore</button>${m ? `<span class="chip"><b>${done}</b> di <b>${m.blocks.length}</b> blocchi completati</span>` : ""}</div>
+    </header>`;
+  let body;
+  if (!m) {
+    body = genPanel("structure", "Passo 1 · struttura della mappa", "Prima si decide come dividere il corso in blocchi. Poi si completa un blocco alla volta: la mappa si salva a ogni passo, puoi finirla anche in più giorni.", true, "Crea tutta la mappa con Claude");
+  } else {
+    const pendingN = m.blocks.length - done;
+    body = `${mapBusy ? `<div class="status" role="status"><span class="spin"></span><span>${esc(mapBusy)}</span></div>` : ""}
+      ${pendingN && sampleFn ? `<div class="row"><button class="btn primary" data-mclaude="all" ${mapBusy ? "disabled" : ""}>Completa ${pendingN === 1 ? "l'ultimo blocco" : `i ${pendingN} blocchi mancanti`} con Claude</button>${mapMsg.all ? `<span class="hint">${esc(mapMsg.all)}</span>` : ""}</div>` : ""}
+      <div class="mapbox" aria-label="Mappa concettuale">${mapSvg(m)}</div>
+      <div class="maplist" aria-label="Mappa concettuale">
+        <div class="mc"><b>${esc(m.center)}</b>${m.subtitle ? `<span>${esc(m.subtitle)}</span>` : ""}</div>
+        <ul>${m.blocks.map((b, i) => `<li><a href="#" data-goblk="${i}" style="--sc:var(--m${i % 8 + 1})" class="${b.content ? "" : "todo"}"><span class="eyebrow">${i + 1} · ${esc(rangesLabel(b.lessons))}${b.content ? "" : " · da completare"}</span><strong>${esc(b.title)}</strong>${b.keys.length ? `<span class="hint">${esc(b.keys.join(" · "))}</span>` : ""}</a></li>`).join("")}</ul>
+      </div>
+      <p class="hint">I blocchi con il bordo tratteggiato sono ancora da completare. Tocca un blocco per andare alla sua sintesi.</p>
+      <nav class="jump" aria-label="Vai al blocco">${m.blocks.map((b, i) => `<a href="#" data-goblk="${i}"><i style="background:var(--m${i % 8 + 1})"></i>${i + 1} · ${esc(b.title)}</a>`).join("")}</nav>
+      ${m.blocks.map((b, i) => blockHtml(b, i)).join("")}
+      <div class="card stack" style="margin-top:28px">
+        ${mapConfirmReset ? `<p><b>Rifare la mappa da capo?</b> I blocchi già scritti verranno cancellati.</p><div class="row"><button class="btn" id="mapResetYes">Sì, rifalla</button><button class="btn ghost" id="mapResetNo">Annulla</button></div>`
+          : `<div class="row" style="justify-content:space-between"><span class="hint">La mappa è scritta da un'intelligenza artificiale a partire dalle domande del paniere: controlla sulle dispense ciò che ti sembra dubbio.</span><button class="btn ghost" id="mapReset">Rifai la mappa da capo</button></div>`}
+      </div>`;
+  }
+  app.innerHTML = head + `<div class="stack mapview">${body}</div>`;
+  bindMap();
+}
+function blockHtml(b, i) {
+  const col = `var(--m${i % 8 + 1})`, c = b.content;
+  return `<section class="blk" id="blk-${i}" style="--sc:${col}">
+    <div class="blk-head"><span class="eyebrow">Blocco ${i + 1} · ${esc(rangesLabel(b.lessons))}</span><h2>${esc(b.title)}</h2>${b.desc ? `<p>${esc(b.desc)}</p>` : ""}</div>
+    ${c ? `
+      ${c.tldr.length ? `<div class="tldr"><span class="eyebrow">Da sapere</span><ul>${c.tldr.map(x => `<li>${rich(x)}</li>`).join("")}</ul></div>` : ""}
+      ${c.concepts.length ? `<div class="concepts">${c.concepts.map(([t, d]) => `<div class="concept"><h3>${esc(t)}</h3><p>${rich(d)}</p></div>`).join("")}</div>` : ""}
+      ${c.open.length ? `<div class="sub">Domande aperte · traccia di risposta</div><div class="open">${c.open.map(([q, a]) => `<details><summary>${rich(q)}</summary><div class="ans"><p>${rich(a)}</p></div></details>`).join("")}</div>` : ""}
+      <div class="row"><button class="btn ghost" data-mredo="${i}">Riscrivi questo blocco</button></div>
+      ${mapDraft["redo" + i] !== undefined ? genPanel("b" + i, `Riscrivi il blocco ${i + 1}`, "La nuova versione sostituirà quella attuale.", true, "Riscrivi con Claude") : ""}`
+    : genPanel("b" + i, `Passo ${i + 2} · completa il blocco ${i + 1}`, `Sintesi, concetti chiave e tracce delle aperte per ${rangesLabel(b.lessons).toLowerCase()}.`, true, "Scrivi questo blocco con Claude")}
+  </section>`;
+}
+function bindMap() {
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  on("mapBack", () => { mapMsg = {}; renderSetup(); window.scrollTo(0, 0); });
+  on("mapReset", () => { mapConfirmReset = true; renderMap(); });
+  on("mapResetNo", () => { mapConfirmReset = false; renderMap(); });
+  on("mapResetYes", () => { mapConfirmReset = false; bank.map = null; mapDraft = {}; mapMsg = {}; libSave(bank); renderMap(); window.scrollTo(0, 0); });
+  app.querySelectorAll("[data-goblk]").forEach(a => a.onclick = e => { e.preventDefault(); document.getElementById("blk-" + a.dataset.goblk)?.scrollIntoView({ behavior: "smooth", block: "start" }); });
+  app.querySelectorAll("[data-mclaude]").forEach(b => b.onclick = () => claudeMap(b.dataset.mclaude));
+  app.querySelectorAll("[data-mredo]").forEach(b => b.onclick = () => { const k = "redo" + b.dataset.mredo; if (mapDraft[k] === undefined) mapDraft[k] = ""; else delete mapDraft[k]; renderMap(); document.getElementById("blk-" + b.dataset.mredo)?.scrollIntoView({ block: "start" }); });
+  app.querySelectorAll("textarea[id^='mpaste-']").forEach(ta => ta.oninput = () => { mapDraft[ta.id.slice(7)] = ta.value; });
+  app.querySelectorAll("[data-mcopy]").forEach(b => b.onclick = async () => {
+    const key = b.dataset.mcopy, txt = promptFor(key), msg = document.getElementById("mcmsg-" + key);
+    try { await navigator.clipboard.writeText(txt); msg.textContent = "Copiato. Ora incollalo in Gemini."; }
+    catch { const ta = document.getElementById("mpaste-" + key); ta.value = txt; ta.focus(); ta.select(); msg.textContent = "Copia non riuscita: il testo è nel riquadro qui sotto, selezionato. Copialo con Ctrl+C, poi sostituiscilo con la risposta."; }
+  });
+  app.querySelectorAll("[data-mapply]").forEach(b => b.onclick = () => {
+    const key = b.dataset.mapply;
+    try {
+      applyMapText(key, mapDraft[key] || "");
+      delete mapDraft[key]; if (key[0] === "b") delete mapDraft["redo" + key.slice(1)];
+      mapMsg = {};
+      renderMap();
+      if (key === "structure") window.scrollTo(0, 0); else document.getElementById("blk-" + key.slice(1))?.scrollIntoView({ block: "start" });
+    } catch (e) {
+      mapMsg[key] = key === "structure" ? "Non trovo i blocchi nella risposta. Incolla tutta la risposta di Gemini: deve contenere righe come «BLOCCO 1: …» e «Lezioni: 1-8»."
+        : "Non trovo le sezioni nella risposta. Incolla tutta la risposta di Gemini: deve contenere «IN BREVE» e «CONCETTI».";
+      renderMap();
+    }
+  });
+}
+function openMap() { getSample().then(() => { if (view === "map") renderMap(); }); mapMsg = {}; mapConfirmReset = false; renderMap(); window.scrollTo(0, 0); }
+
+/* ========== exam view ========== */
+const isAnswered = it => it.type === "mc" ? it.answer !== null : it.answer.trim().length > 0;
+const fmt = ms => { ms = Math.max(0, ms); const s = Math.floor(ms / 1000); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60; return (h ? h + ":" : "") + String(m).padStart(2, "0") + ":" + String(ss).padStart(2, "0"); };
+let confirming = false;
+// in training a closed answer is final once given: the feedback shows right away
+const isLocked = it => exam.mode === "train" && it.type === "mc" && it.answer !== null;
+const save = () => store.set(LS_EXAM, exam);
+
+function renderExam() {
+  view = "exam";
+  const it = exam.items[exam.cur];
+  const n = exam.items.length;
+  const done = exam.items.filter(isAnswered).length;
+  const unanswered = n - done;
+  const navBtns = exam.items.map((x, i) => `<button data-go="${i}" class="${i === exam.cur ? "cur" : isAnswered(x) ? "done" : ""} ${x.type === "open" ? "open" : ""} ${exam.flags.includes(i) ? "flag" : ""}" aria-label="Domanda ${i + 1}${isAnswered(x) ? ", risposta data" : ""}">${i + 1}</button>`).join("");
+  const lock = isLocked(it), fb = lock && it.known != null;
+  const optCls = i => fb ? (i === it.known ? "right" : i === it.answer ? "bad" : "") : it.answer === i ? "sel" : "";
+  const feedback = !lock ? "" : fb
+    ? `<p class="why" role="status"><b>${it.answer === it.known ? "Giusto." : `Sbagliato: la risposta giusta è la ${L(it.known)}.`}</b>${it.knownWhy ? ` ${esc(it.knownWhy)}` : ""}</p>`
+    : `<p class="hint" role="status">Questa domanda non è ancora stata corretta in una prova precedente: vedrai la risposta giusta alla consegna.</p>`;
+  const body = it.type === "mc"
+    ? `<div class="opts" role="radiogroup" aria-label="Opzioni di risposta">${it.options.map((o, i) => `<button class="opt ${optCls(i)}" role="radio" aria-checked="${it.answer === i}" data-opt="${i}" ${lock ? "disabled" : ""}><span class="k">${L(i)}</span><span class="v">${esc(o)}</span></button>`).join("")}</div>${SHORT_NOTE[it.short] ? `<p class="hint">${SHORT_NOTE[it.short](it.options.length)}</p>` : ""}${feedback}`
+    : `<div><textarea id="ans-${exam.cur}" placeholder="Scrivi qui la tua risposta…">${esc(it.answer)}</textarea><div class="hint" id="wc"></div></div>`;
+  app.innerHTML = `
+    <div class="bar"><div class="in">
+      <div class="title"><div class="c">${esc(exam.course)}</div><div class="s"><span class="num">${done}</span> su <span class="num">${n}</span> risposte date</div></div>
+      <div class="timer" id="timer"><small>${exam.mode === "timed" ? "Tempo rimasto" : "Tempo trascorso"}</small><span id="tv">--:--</span></div>
+      <button class="btn primary" id="submit">Consegna</button>
+    </div></div>
+    <div class="exam">
+      ${confirming ? `<div class="confirm" role="alertdialog" aria-label="Conferma consegna">
+        <strong>Consegnare la prova?</strong>
+        <p>${unanswered ? `Hai ancora <b>${unanswered}</b> ${unanswered === 1 ? "domanda" : "domande"} senza risposta: varranno 0 punti.` : "Hai risposto a tutte le domande."} Dopo la consegna non potrai più modificare le risposte.</p>
+        <div class="row"><button class="btn primary" id="doSubmit">Sì, consegna</button><button class="btn" id="cancelSubmit">Torna alla prova</button></div>
+      </div>` : ""}
+      <nav class="nav" aria-label="Elenco domande">${navBtns}</nav>
+      <div class="legend"><span>Il puntino indica le domande aperte</span><span>La riga gialla indica le domande segnate per dopo</span></div>
+      <section class="sheet" aria-live="polite">
+        <div class="qhead">
+          <div class="eyebrow">Domanda ${exam.cur + 1} di ${n} · ${it.lode ? "domanda per la lode" : it.type === "mc" ? "risposta multipla · 1 punto" : "risposta aperta · 1–3 punti"}</div>
+          <span class="hint">${esc(it.topic || "")}</span>
+        </div>
+        <div class="qtext">${esc(it.text)}</div>
+        ${body}
+        <div class="foot">
+          <div class="row">
+            ${it.type === "mc" && it.answer !== null && !lock ? `<button class="btn ghost" id="clear">Annulla risposta</button>` : ""}
+            <button class="btn ghost" id="flag">${exam.flags.includes(exam.cur) ? "Togli segno" : "Segna per dopo"}</button>
+          </div>
+          <div class="row">
+            <button class="btn" id="prev" ${exam.cur === 0 ? "disabled" : ""}>← Precedente</button>
+            <button class="btn ${exam.cur === n - 1 ? "" : "primary"}" id="next" ${exam.cur === n - 1 ? "disabled" : ""}>Successiva →</button>
+          </div>
+        </div>
+      </section>
+    </div>`;
+  app.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(+b.dataset.go));
+  app.querySelectorAll("[data-opt]").forEach(b => b.onclick = () => { it.answer = +b.dataset.opt; save(); renderExam(); });
+  const ta = document.getElementById("ans-" + exam.cur);
+  if (ta) {
+    const wc = () => { const w = ta.value.trim().split(/\s+/).filter(Boolean).length; document.getElementById("wc").textContent = `${w} ${w === 1 ? "parola" : "parole"}`; };
+    ta.oninput = () => { const was = isAnswered(it); it.answer = ta.value; save(); wc(); if (was !== isAnswered(it)) refreshNav(); };
+    wc();
+  }
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  on("prev", () => go(exam.cur - 1));
+  on("next", () => go(exam.cur + 1));
+  on("clear", () => { it.answer = null; save(); renderExam(); });
+  on("flag", () => { const i = exam.flags.indexOf(exam.cur); i >= 0 ? exam.flags.splice(i, 1) : exam.flags.push(exam.cur); save(); renderExam(); });
+  on("submit", () => { confirming = true; renderExam(); window.scrollTo(0, 0); });
+  on("cancelSubmit", () => { confirming = false; renderExam(); });
+  on("doSubmit", () => submit(false));
+  startTick();
+}
+function refreshNav() {
+  const btns = app.querySelectorAll(".nav button");
+  exam.items.forEach((x, i) => btns[i] && btns[i].classList.toggle("done", isAnswered(x) && i !== exam.cur));
+  const s = app.querySelector(".bar .s"); if (s) s.innerHTML = `<span class="num">${exam.items.filter(isAnswered).length}</span> su <span class="num">${exam.items.length}</span> risposte date`;
+}
+function go(i) { if (i < 0 || i >= exam.items.length) return; exam.cur = i; save(); renderExam(); }
+document.addEventListener("keydown", e => {
+  if (view !== "exam" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+  if (e.key === "ArrowRight") go(exam.cur + 1);
+  else if (e.key === "ArrowLeft") go(exam.cur - 1);
+  else if (/^[a-dA-D1-4]$/.test(e.key) && exam.items[exam.cur].type === "mc" && !isLocked(exam.items[exam.cur])) {
+    const k = /\d/.test(e.key) ? +e.key - 1 : e.key.toUpperCase().charCodeAt(0) - 65;
+    if (k < exam.items[exam.cur].options.length) { exam.items[exam.cur].answer = k; save(); renderExam(); }
+  }
+});
+function startTick() {
+  clearInterval(tick);
+  const upd = () => {
+    const tv = document.getElementById("tv"), t = document.getElementById("timer");
+    if (!tv || view !== "exam") return;
+    if (exam.mode === "timed") {
+      const left = exam.deadline - Date.now();
+      tv.textContent = fmt(left);
+      t.classList.toggle("warn", left <= 10 * 60e3 && left > 2 * 60e3);
+      t.classList.toggle("crit", left <= 2 * 60e3);
+      if (left <= 0) submit(true);
+    } else tv.textContent = fmt(Date.now() - exam.started);
+  };
+  upd(); tick = setInterval(upd, 1000);
+}
+
+/* ========== submit & grading ========== */
+function submit(timeUp) {
+  clearInterval(tick); confirming = false;
+  exam.submitted = true; exam.timeUp = !!timeUp; exam.ended = Date.now();
+  // closed questions already corrected in an earlier exam are graded now, from the paniere's memory
+  const p = examBank();
+  exam.items.forEach(it => {
+    if (it.type === "mc") {
+      const k = knownIndex(p, it), a = k >= 0 ? p.answers[it.key] : null;
+      it.correct = a ? k : null; it.why = a ? a.why : ""; it.mem = a ? a.src : "";
+    }
+    else { it.score = it.answer.trim() ? null : 0; it.feedback = it.answer.trim() ? "" : "Nessuna risposta data."; it.model = p?.models?.[it.key] || ""; }
+  });
+  exam.grading = { mc: "idle", open: "idle", note: "" };
+  save();
+  renderResults(); window.scrollTo(0, 0);
+  getSample().then(() => { if (view === "results") renderResults(); });
+}
+
+function mcPrompt(mcs) {
+  return `Sei il docente del corso universitario "${exam.course}". Per ciascuna domanda a risposta multipla qui sotto, indica quale opzione è corretta (indice a partire da 0) e spiega in una frase breve (massimo 30 parole, in italiano) perché.
+Se tra le opzioni c'è "Nessuna risposta corretta", sceglila solo se davvero nessuna delle altre è corretta.
+
+Rispondi SOLO con un array JSON, un oggetto per domanda, nello stesso ordine:
+[{"id": 1, "correct": 2, "why": "..."}]
+
+Domande:
+${mcs.map(({ it, idx }) => `id ${idx}: ${it.text}\n${it.options.map((o, i) => `  ${i}) ${o}`).join("\n")}`).join("\n\n")}`;
+}
+function openPrompt(ops) {
+  return `Sei il docente del corso universitario "${exam.course}" e correggi le risposte aperte di uno studente in una simulazione d'esame.
+Assegna a ciascuna risposta un punteggio intero da 1 a 3 in base alla completezza e correttezza:
+- 3 = risposta completa e corretta, tocca tutti i punti principali;
+- 2 = risposta corretta ma parziale, mancano alcuni elementi importanti;
+- 1 = risposta incompleta, superficiale o con errori, ma pertinente;
+- 0 solo se la risposta è vuota o del tutto fuori tema.
+Per ciascuna scrivi un commento per lo studente (2-3 frasi, in italiano: cosa va bene e cosa manca) e una risposta modello completa ma concisa (4-7 frasi).
+
+Rispondi SOLO con un array JSON nello stesso ordine:
+[{"id": 25, "score": 2, "feedback": "...", "model": "..."}]
+
+${ops.map(({ it, idx }) => `id ${idx}\nDomanda: ${it.text}\nRisposta dello studente:\n"""\n${it.answer.trim()}\n"""`).join("\n\n")}`;
+}
+async function grade() {
+  const s = await getSample();
+  const mcs = exam.items.map((it, idx) => ({ it, idx: idx + 1 })).filter(x => x.it.type === "mc" && x.it.correct == null);
+  const ops = exam.items.map((it, idx) => ({ it, idx: idx + 1 })).filter(x => x.it.type === "open" && x.it.score === null);
+  if (!s) return;
+  const g = exam.grading;
+  const run = async (key, list, prompt, apply) => {
+    if (!list.length) { g[key] = "done"; return; }
+    g[key] = "running"; paintStatus();
+    try {
+      const res = await s.json(prompt(list), { modelTier: "default" });
+      const arr = Array.isArray(res) ? res : (res && Array.isArray(res.items) ? res.items : []);
+      arr.forEach(r => { const it = exam.items[Number(r.id) - 1]; if (it) apply(it, r); });
+      g[key] = "done";
+    } catch (e) {
+      g[key] = "error";
+      if (e && (e.code === "not_granted" || e.code === "sampling_disabled" || e.code === "capability_disabled" || e.code === "not_declared")) g.note = "Non hai autorizzato la correzione con Claude. Puoi correggere tu: clicca la risposta giusta di ogni domanda e assegna i punti alle aperte.";
+      else if (e && e.code === "rate_limited") g.note = "Troppe richieste a Claude in questo momento. Riprova tra qualche minuto oppure correggi a mano.";
+      else g.note = "La correzione automatica non è riuscita. Puoi riprovare oppure correggere a mano.";
+    }
+    save(); renderResults();
+  };
+  await Promise.all([
+    run("mc", mcs, mcPrompt, (it, r) => { const c = Number(r.correct); if (Number.isInteger(c) && c >= 0 && c < it.options.length) { it.correct = c; it.why = String(r.why || ""); it.ai = true; } }),
+    run("open", ops, openPrompt, (it, r) => { const sc = Math.max(0, Math.min(3, Math.round(Number(r.score)))); if (!isNaN(sc)) it.score = sc; it.feedback = String(r.feedback || ""); it.model = String(r.model || ""); it.ai = true; }),
+  ]);
+  remember(exam.items.filter(it => it.ai), "ai");
+}
+function chatPrompt() {
+  const F = exam.fmt || ECAMPUS_FORMATS[0];
+  const allMcs = exam.items.map((it, idx) => ({ it, idx: idx + 1 })).filter(x => x.it.type === "mc");
+  const mcs = allMcs.filter(x => x.it.correct == null); // the rest is already graded from memory
+  const partial = mcs.length < allMcs.length;
+  const ops = exam.items.map((it, idx) => ({ it, idx: idx + 1 })).filter(x => x.it.type === "open");
+  const lodeQ = mcs.find(x => x.it.lode);
+  const nOrd = allMcs.length - (allMcs.some(x => x.it.lode) ? 1 : 0);
+  const max = nOrd + ops.length * 3;
+  const ex = mcs[0] ? mcs[0].idx : 1, exo = ops[0] ? ops[0].idx : 25;
+  const rules = [
+    `ogni domanda a risposta multipla vale 1 punto se giusta, 0 se sbagliata o senza risposta`,
+    ops.length ? `ogni domanda aperta vale da 0 a 3 punti` : "",
+    lodeQ ? `la domanda ${lodeQ.idx} vale solo per la lode: non dà punti, ma se è giusta e tutte le altre sono giuste il voto è 30 e lode` : "",
+    F.pass != null ? `punteggio massimo ${max}; ${F.id === "inter" ? "con almeno " + F.pass + " punti lo studente è ammesso alla prova finale" : "l'esame è superato con almeno " + F.pass + " punti"}` : `punteggio massimo ${max}; questo punteggio si somma a quello della prova intermedia`,
+  ].filter(Boolean).map(r => "- " + r).join("\n");
+  const verdictEx = F.pass == null ? "(da sommare alla prova intermedia)" : F.id === "inter" ? "Ammesso alla prova finale / Non ammesso" : "Superato / Non superato";
+  return `Sei il docente del corso universitario "${exam.course}". Correggi questa simulazione d'esame di uno studente.
+
+REGOLE DI VALUTAZIONE:
+${rules}
+
+${partial ? `Qui trovi solo le domande ancora da correggere: le altre ${allMcs.length - mcs.length} domande a risposta multipla sono già state corrette.
+
+` : ""}${mcs.length ? "" : "(Nessuna domanda a risposta multipla da correggere.)\n\n"}DOMANDE A RISPOSTA MULTIPLA: per ognuna trovi le opzioni e la risposta data dallo studente. Indica l'opzione corretta e spiega brevemente perché. Scegli "Nessuna risposta corretta" solo se davvero nessuna delle altre è corretta.
+
+${mcs.map(({ it, idx }) => `Domanda ${idx}${it.lode ? " (vale solo per la lode)" : ""}: ${it.text}\n${it.options.map((o, i) => `${L(i)}) ${o}`).join("\n")}\nRisposta dello studente: ${it.answer === null ? "nessuna risposta" : L(it.answer)}`).join("\n\n")}
+${ops.length ? `
+DOMANDE A RISPOSTA APERTA: dai alla risposta dello studente un voto da 1 a 3 (3 = completa e corretta; 2 = corretta ma parziale; 1 = incompleta o con errori ma pertinente; 0 se fuori tema). Se lo studente non ha risposto il voto è 0/3: scrivilo comunque. Per ogni domanda aperta, anche senza risposta, scrivi un breve commento e una risposta modello di 4-7 frasi, così lo studente può studiarla.
+
+${ops.map(({ it, idx }) => `Domanda ${idx}: ${it.text}\nRisposta dello studente: ${it.answer.trim() ? `«${it.answer.trim()}»` : "nessuna risposta"}`).join("\n\n")}
+` : ""}
+COME RISPONDERE: correggi ${partial ? "TUTTE le domande elencate qui sopra" : `TUTTE le domande, da 1 a ${exam.items.length}`}, nell'ordine, anche quelle senza risposta. Per ogni domanda usa esattamente lo schema qui sotto, con ogni voce su una riga separata, il grassetto esattamente come nell'esempio (testo della domanda ed etichette in grassetto) e una riga vuota tra una domanda e l'altra. Non aggiungere introduzioni né tabelle.
+
+**Domanda ${ex}: testo completo della domanda**
+**Tua risposta:** B) testo dell'opzione scelta dallo studente (oppure "nessuna risposta")
+**Risposta corretta:** C) testo dell'opzione corretta
+**Spiegazione:** una o due frasi.
+${ops.length ? `
+**Domanda ${exo}: testo completo della domanda**
+**Tua risposta:** «risposta dello studente» (oppure "nessuna risposta")
+**Voto:** 2/3
+**Commento:** cosa va bene e cosa manca.
+**Risposta modello:** la risposta modello in un unico paragrafo.
+` : ""}${partial ? "" : `
+Alla fine, dopo una riga vuota, scrivi il riepilogo contando con attenzione le risposte giuste:
+
+**RIEPILOGO**
+**Risposte multiple corrette:** X su ${nOrd}${lodeQ ? `
+**Domanda per la lode:** giusta / sbagliata` : ""}${ops.length ? `
+**Domande aperte:** Y su ${ops.length * 3}` : ""}
+**Voto finale:** Z/${max} - ${verdictEx}`}`;
+}
+function applyPasted(text) {
+  const raw = String(text || "");
+  let n = 0;
+  // 1) JSON, if the chatbot sent it anyway
+  try {
+    const s = raw.replace(/```(?:json)?/gi, ""), a = s.indexOf("{"), b = s.lastIndexOf("}");
+    if (a >= 0 && b > a) {
+      const data = JSON.parse(s.slice(a, b + 1));
+      (data.chiuse || data.mc || []).forEach(r => { if (setMc(exam.items[Number(r.id) - 1], r.corretta ?? r.correct, r.perche ?? r.why)) n++; });
+      (data.aperte || data.open || []).forEach(r => { const it = exam.items[Number(r.id) - 1]; if (setOpen(it, r.punteggio ?? r.score, r.commento ?? r.feedback)) { it.model = String(r.modello ?? r.model ?? ""); n++; } });
+      if (n) return n;
+    }
+  } catch {}
+  const clean = raw.replace(/\r/g, "").replace(/[*_#`>]/g, "").split(/\n\s*RIEPILOGO\b/i)[0];
+  // 2) block format: "Domanda 3: …  Tua risposta: …  Risposta corretta: C) …  Spiegazione: …"
+  const heads = [...clean.matchAll(/Domanda\s+(\d{1,2})\s*[:.\-–—)]/gi)];
+  if (heads.length) {
+    const LBL = "(?=\\n|Tua risposta|Risposta corretta|Spiegazione|Voto|Commento|Risposta modello|$)";
+    const field = (blk, name, all) => {
+      const m = blk.match(new RegExp(name + "\\s*[:\\-–—]\\s*([\\s\\S]*?)" + (all ? "(?=\\n\\s*\\n|Risposta modello\\s*[:\\-–—]|$)" : LBL), "i"));
+      return m ? m[1].replace(/\s+/g, " ").trim() : "";
+    };
+    heads.forEach((h, k) => {
+      const it = exam.items[Number(h[1]) - 1];
+      const blk = clean.slice(h.index + h[0].length, k + 1 < heads.length ? heads[k + 1].index : clean.length);
+      if (!it) return;
+      if (it.type === "mc") {
+        const c = blk.match(/Risposta\s+corretta\s*[:\-–—]?\s*(?:opzione\s*)?\(?([A-Da-d])\)?(?![A-Za-zÀ-ÿ])/i);
+        if (c && setMc(it, c[1], field(blk, "Spiegazione", true))) n++;
+      } else {
+        const v = blk.match(/(?:Voto|Punteggio)\s*[:\-–—]\s*([0-3])/i);
+        if (v && setOpen(it, v[1], field(blk, "Commento", true))) { it.model = field(blk, "Risposta modello", true); n++; }
+      }
+    });
+    if (n) return n;
+  }
+  // 3) line format: "12: B - perché" / "25: 2/3 - commento" / "Risposta modello: ..."
+  const lines = clean.replace(/([.!?»"])\s*(\d{1,2})\s*:\s*(?=[A-Da-d0-3]\b)/g, "$1\n$2: ");
+  let cur = null, inModel = false;
+  for (let line of lines.split("\n")) {
+    line = line.replace(/^\s*[-•]\s+/, "").trim();
+    if (!line) { if (cur && (inModel || cur.type === "mc")) { cur = null; inModel = false; } continue; }
+    const m = line.match(/^(?:domanda\s*)?(?:n\.?\s*)?(\d{1,2})\s*[:.)\-–—]\s*(.*)$/i);
+    const it = m ? exam.items[Number(m[1]) - 1] : null;
+    if (it) {
+      const rest = m[2];
+      if (it.type === "mc") {
+        const lm = rest.match(/^(?:risposta(?:\s+corretta)?\s*[:\-]?\s*)?(?:opzione\s*)?\(?([A-Da-d])\)?(?=[\s\-–—:.),]|$)\s*[\-–—:.),]*\s*(.*)$/i);
+        if (lm && setMc(it, lm[1], lm[2])) { n++; cur = it; inModel = false; continue; }
+      } else {
+        const sm = rest.match(/^(?:voto|punteggio|punti)?\s*[:\-]?\s*([0-3])(?:\s*(?:\/|su)\s*3)?(?:\s*punt[io])?\s*[\-–—:.),]*\s*(.*)$/i);
+        if (sm && setOpen(it, sm[1], sm[2])) { it.model = ""; n++; cur = it; inModel = false; continue; }
+      }
+    }
+    if (!cur) continue;
+    const mm = line.match(/^risposta\s+modello\s*[:\-–]?\s*(.*)$/i);
+    if (mm && cur.type === "open") { inModel = true; cur.model = mm[1]; continue; }
+    if (/^(domande|parte)\b/i.test(line)) { cur = null; continue; }
+    if (cur.type === "open") { if (inModel) cur.model += (cur.model ? " " : "") + line; else cur.feedback += (cur.feedback ? " " : "") + line; }
+    else cur.why += (cur.why ? " " : "") + line;
+  }
+  if (!n) throw new Error("empty");
+  return n;
+}
+function setMc(it, c, why) {
+  if (!it || it.type !== "mc") return false;
+  c = typeof c === "string" && /^[A-Za-z]$/.test(c.trim()) ? c.trim().toUpperCase().charCodeAt(0) - 65 : Number(c);
+  if (!Number.isInteger(c) || c < 0 || c >= it.options.length) return false;
+  it.correct = c; it.why = String(why ?? "").trim(); it.ai = true; return true;
+}
+function setOpen(it, sc, fb) {
+  if (!it || it.type !== "open") return false;
+  sc = Math.round(Number(sc));
+  if (isNaN(sc)) return false;
+  it.score = Math.max(0, Math.min(3, sc)); it.feedback = String(fb ?? "").trim(); it.ai = true; return true;
+}
+let pasteDraft = "", pasteMsg = "", copyMsg = "";
+function gradePanel(t, busy) {
+  if (t.complete && !pasteMsg) return "";
+  const canClaude = !!sampleFn;
+  return `<div class="card stack" id="gradePanel">
+    <div><div class="eyebrow">Correzione</div><h2>${t.complete ? "Correzione applicata" : "Come vuoi correggere la prova?"}</h2></div>
+    <div class="stack" style="gap:12px">
+      <div><strong>Correggi gratis con Gemini</strong> <span class="hint">(o con un altro chatbot: ChatGPT, Copilot…)</span></div>
+      <ol class="steps">
+        <li><button class="btn primary" id="copyPrompt">Copia il testo per la correzione</button> <span class="hint" id="copyMsg">${esc(copyMsg)}</span></li>
+        <li>Apri <a href="https://gemini.google.com/app" target="_blank" rel="noopener">gemini.google.com</a>, incolla il testo e invialo.</li>
+        <li>Copia tutta la risposta di Gemini e incollala qui sotto: la pagina assegna i punti da sola.</li>
+      </ol>
+      <details id="promptBox"><summary>Mostra il testo da copiare</summary><textarea id="promptText" readonly style="min-height:160px;font-family:var(--f-mono);font-size:.8rem">${esc(chatPrompt())}</textarea></details>
+      <textarea id="paste" placeholder="Incolla qui la risposta di Gemini…" style="min-height:120px;font-family:var(--f-mono);font-size:.85rem">${esc(pasteDraft)}</textarea>
+      <div class="row"><button class="btn primary" id="applyPaste">Applica la correzione</button>${pasteMsg ? `<span class="hint">${esc(pasteMsg)}</span>` : ""}</div>
+    </div>
+    ${canClaude ? `<div class="stack" style="gap:8px;border-top:1px solid var(--line);padding-top:16px"><strong>Hai un account Claude?</strong><div class="row"><button class="btn" id="gradeClaude" ${busy ? "disabled" : ""}>Correggi direttamente con Claude</button><span class="hint">Un clic, senza copia e incolla. Usa i messaggi del tuo account: con Pro ne hai molti di più.</span></div></div>` : ""}
+    <p class="hint">Oppure correggi da solo: clicca la risposta giusta di ogni domanda${t.nop ? " e scegli i punti delle aperte" : ""}.</p>
+  </div>`;
+}
+function paintStatus() { if (view === "results") renderResults(); }
+
+/* ========== results view ========== */
+let rfilter = "all";
+function totals() {
+  let mc = 0, mcKnown = 0, op = 0, opKnown = 0, nmc = 0, nop = 0;
+  const lode = { present: false, ok: false, known: false };
+  exam.items.forEach(it => {
+    if (it.lode) { lode.present = true; lode.known = it.answer === null || it.correct != null; lode.ok = it.answer !== null && it.correct === it.answer; return; }
+    if (it.type === "mc") { nmc++; if (it.answer === null) { mcKnown++; } else if (it.correct !== null && it.correct !== undefined) { mcKnown++; if (it.correct === it.answer) mc++; } }
+    else { nop++; if (it.score !== null && it.score !== undefined) { opKnown++; op += it.score; } }
+  });
+  return { mc, op, tot: mc + op, nmc, nop, lode, complete: mcKnown === nmc && opKnown === nop && (!lode.present || lode.known) };
+}
+function itemState(it) {
+  if (it.type === "mc") {
+    if (it.answer === null) return "ko";
+    if (it.correct === null || it.correct === undefined) return "unk";
+    return it.correct === it.answer ? "ok" : "ko";
+  }
+  if (it.score === null || it.score === undefined) return "unk";
+  return it.score === 3 ? "ok" : it.score === 0 ? "ko" : "part";
+}
+function renderResults() {
+  view = "results"; clearInterval(tick);
+  const t = totals(), g = exam.grading || {};
+  const busy = g.mc === "running" || g.open === "running";
+  const dur = fmt((exam.ended || Date.now()) - exam.started);
+  const F = exam.fmt || ECAMPUS_FORMATS[0];
+  const max = t.nmc + t.nop * 3;
+  if (t.complete) recordStats(t, max);
+  const laude = t.complete && t.lode.present && F.id === "unico" && t.tot === max && t.lode.ok;
+  const verdict = !t.complete ? `<span class="verdict pend">Correzione da completare</span>`
+    : exam.review || exam.mode === "train" ? `<span class="verdict pend">${exam.review ? "Ripasso errori" : "Allenamento"} · non conta nei voti</span>`
+    : F.pass == null ? `<span class="verdict pend">${esc(F.passText.charAt(0).toUpperCase() + F.passText.slice(1))}</span>`
+    : t.tot >= F.pass ? `<span class="verdict pass">${laude ? "30 e lode" : esc(F.passOk)}</span>` : `<span class="verdict fail">${esc(F.passKo)}</span>`;
+  const lodeRow = t.lode.present ? `<div class="b"><div class="h"><span>Domanda per la lode</span><span class="num">${!t.lode.known ? "?" : t.lode.ok ? "giusta" : "sbagliata"}</span></div><p class="hint">${F.id === "finale" ? "Conta per la lode solo se hai risposto giusto anche a tutte le 24 domande dell'intermedia." : "Conta solo se hai risposto giusto a tutte le altre 30 domande."}</p></div>` : "";
+  const status = busy ? `<div class="status" role="status"><span class="spin"></span><span>Claude sta correggendo ${g.mc === "running" && g.open === "running" ? "le domande chiuse e le aperte" : g.mc === "running" ? "le domande chiuse" : "le domande aperte"}. Di solito ci vuole meno di un minuto.</span></div>` : "";
+  const note = g.note ? `<div class="note ${g.mc === "error" || g.open === "error" ? "err" : ""}">${esc(g.note)} ${g.mc === "error" || g.open === "error" ? `<button class="btn" id="retry" style="margin-left:6px">Riprova la correzione</button>` : ""}</div>` : "";
+  const counts = { all: exam.items.length, ko: 0, ok: 0, open: t.nop };
+  exam.items.forEach(it => { const s = itemState(it); if (s === "ok") counts.ok++; if (s === "ko" || s === "part") counts.ko++; });
+  const list = exam.items.map((it, i) => ({ it, i })).filter(({ it }) => rfilter === "all" || (rfilter === "open" ? it.type === "open" : rfilter === "ok" ? itemState(it) === "ok" : ["ko", "part"].includes(itemState(it))));
+  app.innerHTML = `
+    <header class="top">
+      <div class="eyebrow">Risultato · ${esc(exam.course)}</div>
+      <h1>${exam.timeUp ? "Tempo scaduto: prova consegnata" : "Prova consegnata"}</h1>
+      <p class="lede">${exam.fmt && exam.fmt.id !== "std" ? esc(exam.fmt.label) + " · " : ""}${exam.review ? "Ripasso errori · " : ""}Modalità ${MODE_LABEL[exam.mode] || "senza limite"} · durata <span class="num">${dur}</span></p>
+    </header>
+    <div class="stack">
+      <div class="card score">
+        <div><div class="tot">${t.tot}<span>/${max}</span></div><div style="margin-top:8px">${verdict}</div></div>
+        <div class="bars">
+          <div class="b"><div class="h"><span>Risposta multipla</span><span class="num">${t.mc}/${t.nmc}</span></div><div class="track"><i style="width:${t.nmc ? t.mc / t.nmc * 100 : 0}%"></i></div></div>
+          ${t.nop ? `<div class="b"><div class="h"><span>Risposta aperta</span><span class="num">${t.op}/${t.nop * 3}</span></div><div class="track"><i style="width:${t.op / (t.nop * 3) * 100}%"></i></div></div>` : ""}
+          ${lodeRow}
+          <p class="hint">Clicca un'opzione per cambiare quella corretta${t.nop ? ", o un punteggio per correggere il voto di una domanda aperta" : ""}: il totale si aggiorna.</p>
+        </div>
+      </div>
+      ${status}${note}
+      ${gradePanel(t, busy)}
+      <div class="row" style="justify-content:space-between">
+        <div class="filters" role="group" aria-label="Filtra domande">
+          ${[["all", "Tutte"], ["ko", "Da rivedere"], ["ok", "Corrette"], ...(t.nop ? [["open", "Aperte"]] : [])].map(([k, l]) => `<button data-f="${k}" aria-pressed="${rfilter === k}">${l} <span class="num">${counts[k]}</span></button>`).join("")}
+        </div>
+        <div class="row"><button class="btn primary" id="again">Nuova simulazione</button><button class="btn" id="home">Cambia impostazioni</button></div>
+      </div>
+      <div class="review">${list.map(({ it, i }) => reviewItem(it, i, busy)).join("") || `<p class="muted">Nessuna domanda in questo filtro.</p>`}</div>
+    </div>`;
+  app.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { rfilter = b.dataset.f; renderResults(); });
+  app.querySelectorAll("[data-mark]").forEach(b => b.onclick = () => {
+    const [i, o] = b.dataset.mark.split(":").map(Number), it = exam.items[i];
+    if (it.correct !== o) it.why = ""; // the old explanation was about another option
+    it.correct = o; it.ai = false; it.mem = "now";
+    remember([it], "user"); save(); renderResults();
+  });
+  app.querySelectorAll("[data-score]").forEach(b => b.onclick = () => { const [i, s] = b.dataset.score.split(":").map(Number); exam.items[i].score = s; save(); renderResults(); });
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  on("again", () => {
+    const m = exam.mode, rv = exam.review; store.del(LS_EXAM); if (!bank) bank = examBank(); renderSetup();
+    if (!bank) return;
+    const r = document.getElementById("mode-" + m); if (r) r.checked = true;
+    const pk = document.querySelector(`input[name="pick"][value="${rv ? "review" : "all"}"]`); if (pk) pk.checked = true;
+    startExam();
+  });
+  on("home", () => { store.del(LS_EXAM); if (!bank) bank = library.find(p => p.id === exam.bankId) || null; setupMsg = ""; renderSetup(); window.scrollTo(0, 0); });
+  on("gradeClaude", () => { exam.grading = { mc: "idle", open: "idle", note: "" }; save(); grade(); });
+  const pa = document.getElementById("paste"); if (pa) pa.oninput = () => { pasteDraft = pa.value; };
+  on("copyPrompt", async () => {
+    const txt = chatPrompt();
+    try { await navigator.clipboard.writeText(txt); copyMsg = "Copiato. Ora incollalo in Gemini."; document.getElementById("copyMsg").textContent = copyMsg; }
+    catch { const d = document.getElementById("promptBox"); d.open = true; const ta = document.getElementById("promptText"); ta.focus(); ta.select(); document.getElementById("copyMsg").textContent = "Copia non riuscita: il testo è selezionato qui sotto, copialo con Ctrl+C."; }
+  });
+  on("applyPaste", () => {
+    try { const n = applyPasted(pasteDraft); pasteMsg = `Correzione applicata a ${n} domande. Controlla pure i voti qui sotto.`; pasteDraft = ""; exam.grading = { mc: "done", open: "done", note: "" }; remember(exam.items.filter(it => it.ai), "ai"); save(); }
+    catch (e) { pasteMsg = "Non trovo correzioni nel testo incollato. Incolla la risposta completa di Gemini: deve contenere voci come «Domanda 3:» e «Risposta corretta: B) …»."; }
+    renderResults();
+  });
+  on("retry", () => { exam.grading = { mc: "idle", open: "idle", note: "" }; save(); grade(); });
+}
+const MEM_NOTE = {
+  ai: "Già corretta in una prova precedente. Se la risposta giusta è sbagliata, clicca quella corretta: la memoria si aggiorna.",
+  user: "Risposta giusta indicata da te in una prova precedente.",
+  now: "Salvata: questa risposta verrà usata anche nelle prossime prove.",
+};
+function reviewItem(it, i, busy) {
+  const st = itemState(it);
+  if (it.type === "mc") {
+    const pts = st === "unk" ? "?" : st === "ok" ? "1" : "0";
+    const opts = it.options.map((o, k) => {
+      const isC = it.correct === k, isA = it.answer === k;
+      const cls = isC ? "correct" : isA && it.correct !== null && it.correct !== undefined ? "wrong" : "";
+      const tag = isC && isA ? "Tua · corretta" : isC ? "Corretta" : isA ? "Tua risposta" : "";
+      return `<button class="ropt ${cls}" data-mark="${i}:${k}" title="Segna come risposta corretta" ${busy && it.correct == null ? "disabled" : ""}><span class="k">${L(k)}</span><span>${esc(o)}</span><span class="tag">${tag}</span></button>`;
+    }).join("");
+    return `<article class="ritem ${st}">
+      <div class="qhead"><span class="eyebrow">Domanda ${i + 1} · ${it.lode ? "per la lode" : "risposta multipla"}${it.topic ? " · " + esc(it.topic) : ""}</span><span class="pts">${pts} / 1</span></div>
+      <div class="qt">${esc(it.text)}</div>
+      ${it.answer === null ? `<p class="why"><b>Non hai risposto.</b></p>` : ""}
+      <div class="ropts">${opts}</div>
+      ${it.why ? `<p class="why"><b>Perché:</b> ${esc(it.why)}</p>` : st === "unk" && !busy ? `<p class="hint">Clicca l'opzione che ritieni corretta.</p>` : ""}
+      ${MEM_NOTE[it.mem] ? `<p class="memnote">${MEM_NOTE[it.mem]}</p>` : ""}
+    </article>`;
+  }
+  const pts = st === "unk" ? "?" : it.score;
+  return `<article class="ritem ${st}">
+    <div class="qhead"><span class="eyebrow">Domanda ${i + 1} · risposta aperta${it.topic ? " · " + esc(it.topic) : ""}</span><span class="pts">${pts} / 3</span></div>
+    <div class="qt">${esc(it.text)}</div>
+    <div><div class="eyebrow" style="margin-bottom:6px">La tua risposta</div><div class="answer">${it.answer.trim() ? esc(it.answer.trim()) : `<span class="muted">Nessuna risposta</span>`}</div></div>
+    ${it.feedback ? `<p class="why"><b>Commento:</b> ${esc(it.feedback)}</p>` : ""}
+    ${it.model ? `<details><summary>Mostra una risposta modello</summary><div class="answer">${esc(it.model)}</div></details>` : ""}
+    <div class="row"><span class="hint">Punteggio</span><div class="seg" role="group" aria-label="Punteggio domanda ${i + 1}">${[0, 1, 2, 3].map(s => `<button data-score="${i}:${s}" aria-pressed="${it.score === s}">${s}</button>`).join("")}</div></div>
+  </article>`;
+}
+
+/* ========== boot ========== */
+await libLoad();
+const b0 = store.get(LS_EXAM);
+if (b0 && b0.submitted) { exam = b0; if (exam.grading && (exam.grading.mc === "running" || exam.grading.open === "running")) exam.grading = { mc: "idle", open: "idle", note: "" }; renderResults(); getSample().then(() => { if (view === "results") renderResults(); }); }
+else renderSetup();
+</script>
+
+</body></html>
