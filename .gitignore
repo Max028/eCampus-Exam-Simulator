@@ -1,3 +1,6 @@
 # panieri e backup personali: non vanno pubblicati
 *.pdf
 backup-simulatore-*.json
+
+# configurazione locale di Claude Code
+.claude/

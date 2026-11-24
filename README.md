@@ -24,3 +24,14 @@ Panieri, voti e statistiche restano **solo nel browser** di chi usa la pagina (I
 ## Licenza
 
 Codice distribuito con licenza [MIT](LICENSE): puoi usarlo, modificarlo e ridistribuirlo, mantenendo la nota di copyright. Il software è fornito «così com'è», senza garanzie.
+
+## Privacy
+
+Il sito non usa cookie né strumenti di tracciamento e non raccoglie dati. Caratteri e librerie sono inclusi nel repository e serviti da GitHub Pages: aprendo il sito non viene contattato nessun altro server. I contenuti vengono inviati a Gemini o a Claude solo se l'utente sceglie di farlo.
+
+## Componenti di terze parti
+
+- [pdf.js](https://github.com/mozilla/pdf.js) 4.10.38 di Mozilla, licenza Apache 2.0: `vendor/pdfjs/`
+- Caratteri Public Sans, Source Serif 4, Bricolage Grotesque e JetBrains Mono, licenza SIL Open Font License 1.1 (pacchetti Fontsource): `vendor/fonts/`
+
+Le licenze originali sono incluse nelle rispettive cartelle.
