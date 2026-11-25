@@ -367,7 +367,8 @@ function parsePaniere(pages) {
       if (t && !NOISE.some(r => r.test(t))) allLines.push(ln);
     }
   });
-  const QRE = /^(\d{1,3})\.\s+(.+)$/;
+  // "12. Testo", "12.Testo" or "12." alone with the text on the next line; never "1.001" or "192.168.0.1"
+  const QRE = /^(\d{1,3})\.(?:\s*$|\s+(.+)|([^\d\s.].*))$/;
   // dominant x of question-number lines
   const xs = {};
   allLines.forEach(l => { if (QRE.test(l.text)) { const k = Math.round(l.x); xs[k] = (xs[k] || 0) + 1; } });
@@ -375,21 +376,24 @@ function parsePaniere(pages) {
   if (isNaN(qx)) return { course, questions: [], declared, isPaniere };
   const questions = [];
   let topic = "", cur = null, last = null;
-  const flush = () => { if (cur) { cur.text = cur.text.replace(/^\d{1,2}[.)]\s+/, ""); delete cur.textX; questions.push(cur); } cur = null; };
+  const flush = () => { if (cur) { cur.text = cur.text.replace(/^\d{1,2}[.)]\s+/, ""); delete cur.textX; if (cur.text) questions.push(cur); } cur = null; };
   for (const l of allLines) {
     const lez = l.text.match(/^(Lezione|Lesson|Modulo)\s+(\d+)\b/i);
     if (lez && Math.abs(l.x - qx) < 4) { flush(); topic = l.text; last = null; continue; }
     const qm = l.text.match(QRE);
     if (qm && Math.abs(l.x - qx) < 3) {
       flush();
-      const second = l.parts.length > 1 ? l.parts[1].x : l.x + 15;
-      cur = { topic, num: qm[1], text: qm[2], options: [], textX: second };
+      const text = qm[2] ?? qm[3] ?? "";
+      const second = !text ? null : l.parts.length > 1 ? l.parts[1].x : l.x + 15;
+      cur = { topic, num: qm[1], text, options: [], textX: second };
       last = l; continue;
     }
     if (!cur) continue;
     const gap = last && last.page === l.page ? last.y - l.y : Infinity;
     const lh = Math.max(l.h || 8, 6);
-    if (!cur.options.length && Math.abs(l.x - cur.textX) < 2 && gap < lh * 1.6) {
+    if (!cur.text && l.x > qx + 3) { // number alone on its line: the next line is the question
+      cur.text = l.text; cur.textX = l.x;
+    } else if (!cur.options.length && Math.abs(l.x - cur.textX) < 2 && gap < lh * 1.6) {
       cur.text += " " + l.text;
     } else if (cur.options.length && gap < lh * 1.6) {
       cur.options[cur.options.length - 1] += " " + l.text;
@@ -399,7 +403,15 @@ function parsePaniere(pages) {
     last = l;
   }
   flush();
-  return { course, questions, declared, isPaniere };
+  // questions are numbered 1..n inside each lesson: a hole in the numbering is a question that was not read
+  const gaps = [], nums = new Map();
+  questions.forEach(q => { if (!nums.has(q.topic)) nums.set(q.topic, new Set()); nums.get(q.topic).add(+q.num); });
+  for (const [t, set] of nums) {
+    const miss = [];
+    for (let i = 1; i < Math.max(...set); i++) if (!set.has(i)) miss.push(i);
+    if (miss.length) gaps.push({ topic: (t.match(/^(Lezione|Lesson|Modulo)\s+\d+/i) || [t || "senza lezione"])[0], miss });
+  }
+  return { course, questions, declared, isPaniere, gaps };
 }
 
 
@@ -995,6 +1007,11 @@ function checkPaniere(res) {
   // originals can have a stray question with 3 options; when the declared counts match, only many of them are suspicious
   const countsOk = !issues.length && res.declared.mc != null;
   if (odd > (countsOk ? Math.max(2, Math.round(mc.length / 100)) : 0)) issues.push(`${odd} ${odd === 1 ? "domanda ha" : "domande hanno"} un numero di opzioni diverso da 4`);
+  const gaps = res.gaps || [], nMiss = gaps.reduce((s, g) => s + g.miss.length, 0);
+  if (nMiss) {
+    const shown = gaps.slice(0, 6).map(g => `${g.topic} n. ${g.miss.join(", ")}`).join("; ");
+    issues.push(`non sono riuscito a leggere ${nMiss === 1 ? "la domanda" : nMiss + " domande"} (${shown}${gaps.length > 6 ? `; e in altre ${gaps.length - 6} lezioni` : ""})`);
+  }
   return issues;
 }
 async function acceptBank(res, name, flagged = false) {
