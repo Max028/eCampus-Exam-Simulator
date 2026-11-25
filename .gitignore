@@ -4,3 +4,6 @@ backup-simulatore-*.json
 
 # configurazione locale di Claude Code
 .claude/
+
+# note locali per Claude
+CLAUDE.local.md
