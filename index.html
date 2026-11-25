@@ -354,8 +354,13 @@ function parsePaniere(pages) {
   let course = "", isPaniere = false;
   const declared = { mc: null, open: null };
   const allLines = [];
-  pages.forEach((pg, pi) => {
-    for (const ln of pageLines(pg.items, pi)) {
+  const pageLns = pages.map((pg, pi) => pageLines(pg.items, pi));
+  // page furniture: the same text at the same height on many pages (e.g. the faculty name under the course title)
+  const furniture = new Map(), fkey = ln => Math.round(ln.y) + "|" + ln.text;
+  pageLns.forEach(lns => new Set(lns.map(fkey)).forEach(k => furniture.set(k, (furniture.get(k) || 0) + 1)));
+  const minRepeat = Math.max(3, pages.length * 0.3);
+  pageLns.forEach(lns => {
+    for (const ln of lns) {
       const t = ln.text;
       if (/^Set Domande\b/i.test(t)) {
         isPaniere = true;
@@ -364,7 +369,7 @@ function parsePaniere(pages) {
       }
       const dm = t.match(/^N°\s*Domande\s+(Aperte|Chiuse)\s+(\d+)/i);
       if (dm) declared[dm[1].toLowerCase() === "aperte" ? "open" : "mc"] = +dm[2];
-      if (t && !NOISE.some(r => r.test(t))) allLines.push(ln);
+      if (t && !NOISE.some(r => r.test(t)) && furniture.get(fkey(ln)) < minRepeat) allLines.push(ln);
     }
   });
   // "12. Testo", "12.Testo" or "12." alone with the text on the next line; never "1.001" or "192.168.0.1"
