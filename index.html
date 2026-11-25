@@ -65,7 +65,10 @@ button { font: inherit; cursor: pointer; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
 /* ---------- setup ---------- */
-header.top { padding-block: 32px 20px; display: grid; gap: 8px; }
+header.top { padding-block: 32px 20px; display: grid; gap: 8px; position: relative; }
+.ghlink { position: absolute; top: 24px; right: 0; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: var(--muted); }
+.ghlink:hover { color: var(--ink); background: var(--sunken); }
+.ghlink:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .lede { color: var(--muted); max-width: 62ch; }
 .claudecta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin-top: 16px; padding: 14px 16px; border-radius: var(--r); background: var(--accent-soft); border: 1px solid var(--line); font-size: 0.92rem; }
 .claudecta > div { flex: 1 1 320px; display: grid; gap: 4px; }
@@ -793,6 +796,7 @@ async function recordStats(t, max) {
 const GROUP_DESC = "Intermedia 24 · finale 7 · unico 31 · 45 minuti";
 // the same page hosted on claude.ai, where grading and maps can use the viewer's Claude account
 const CLAUDE_URL = "https://claude.ai/artifact/82WfSbLV5ZHPM3FW9whLbn";
+const REPO_URL = "https://github.com/Max028/eCampus-Exam-Simulator";
 const UNIS = [
   { id: "ecampus", name: "eCampus", desc: "24 domande a risposta multipla + 2 aperte · 60 minuti", ready: true, formats: ECAMPUS_FORMATS },
   // Same group, same exam rules. Kept disabled until a real paniere has been checked.
@@ -870,6 +874,7 @@ function renderSetup() {
   }
   app.innerHTML = `
     <header class="top">
+      <a class="ghlink" href="${REPO_URL}" target="_blank" rel="noopener" aria-label="Codice sorgente su GitHub" title="Codice sorgente su GitHub"><svg viewBox="0 0 16 16" width="26" height="26" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
       <div class="eyebrow">Strumento di studio</div>
       <h1>Simulazione d'esame</h1>
       <p class="lede">Carica il paniere del tuo corso: la pagina estrae a caso 24 domande a risposta multipla e 2 aperte, come all'esame eCampus, e alla consegna puoi farla correggere ${window.claude ? "da Claude, " : ""}da Gemini (o da un altro chatbot) oppure correggerla tu. Ogni voto resta modificabile.</p>
