@@ -872,7 +872,7 @@ function renderSetup() {
           <div class="modes three">
             <label class="mode"><input type="radio" name="mode" id="mode-timed" value="timed" checked><span class="t">A tempo · ${curFmt().minutes} minuti</span><span class="d">Come all'esame: allo scadere la prova viene consegnata da sola.</span></label>
             <label class="mode"><input type="radio" name="mode" id="mode-free" value="free"><span class="t">Senza limite di tempo</span><span class="d">Per ripassare con calma. Il cronometro segna solo il tempo trascorso.</span></label>
-            <label class="mode"><input type="radio" name="mode" id="mode-train" value="train"><span class="t">Allenamento</span><span class="d">${cov ? `Vedi subito se hai risposto giusto, sulle ${cov} domande con risposta salvata.` : "Vedi subito se hai risposto giusto: funziona sulle domande già corrette in una prova precedente."} Senza limite di tempo.</span></label>
+            <label class="mode"><input type="radio" name="mode" id="mode-train" value="train"><span class="t">Allenamento</span><span class="d">${cov ? `Vedi subito se hai risposto giusto, sulle ${cov} domande con risposta salvata.` : "Vedi subito se hai risposto giusto: funziona sulle domande già corrette in una prova precedente."} Senza limite di tempo, con tutte le domande delle lezioni scelte.</span></label>
           </div>
         </fieldset>
         ${rev ? `<fieldset>
@@ -1057,14 +1057,16 @@ function startExam() {
   const P = pool();
   const F = curFmt();
   if (review ? !P.review.length : !P.mc.length && !P.op.length) { setupMsg = review ? "Nessuna domanda da ripassare nell'intervallo di lezioni scelto." : "Nessuna domanda nell'intervallo di lezioni scelto."; setupErr = true; renderSetup(); return; }
-  // a review run is only the closed questions to review, most-missed first
+  // a review run is only the closed questions to review, most-missed first;
+  // training has no score to match the exam, so it takes every question in the chosen lessons
+  const train = mode === "train", nMc = train ? Infinity : F.mc, nOp = train ? Infinity : F.open;
   const items = [
-    ...(review ? P.review : shuffle(P.mc)).slice(0, F.mc).map(q => { const u = uniqOptions(q.options); return { type: "mc", key: qkey(q), topic: q.topic, text: q.text, options: shuffle(u), answer: null, short: u.length < q.options.length ? "dup" : u.length < 4 ? "few" : null }; }),
-    ...(review ? [] : shuffle(P.op).slice(0, F.open).map(q => ({ type: "open", key: qkey(q), topic: q.topic, text: q.text, answer: "" }))),
+    ...(review ? P.review : shuffle(P.mc)).slice(0, nMc).map(q => { const u = uniqOptions(q.options); return { type: "mc", key: qkey(q), topic: q.topic, text: q.text, options: shuffle(u), answer: null, short: u.length < q.options.length ? "dup" : u.length < 4 ? "few" : null }; }),
+    ...(review ? [] : shuffle(P.op).slice(0, nOp).map(q => ({ type: "open", key: qkey(q), topic: q.topic, text: q.text, answer: "" }))),
   ];
-  if (mode === "train") items.forEach(it => { if (it.type !== "mc") return; const k = knownIndex(bank, it); if (k >= 0) { it.known = k; it.knownWhy = bank.answers[it.key].why || ""; } });
+  if (train) items.forEach(it => { if (it.type !== "mc") return; const k = knownIndex(bank, it); if (k >= 0) { it.known = k; it.knownWhy = bank.answers[it.key].why || ""; } });
   pasteDraft = pasteMsg = copyMsg = "";
-  if (F.lode && !review) { const mcs = items.filter(x => x.type === "mc"); if (mcs.length === F.mc) mcs[mcs.length - 1].lode = true; }
+  if (F.lode && !review && !train) { const mcs = items.filter(x => x.type === "mc"); if (mcs.length === F.mc) mcs[mcs.length - 1].lode = true; }
   exam = { course: bank.course || recName(bank), bankId: bank.id, uni: curUni().name, fmt: F, mode, review, started: Date.now(), deadline: mode === "timed" ? Date.now() + F.minutes * 60e3 : null, items, cur: 0, flags: [], submitted: false };
   store.set(LS_EXAM, exam);
   getSample(); // resolve early; asks nothing
