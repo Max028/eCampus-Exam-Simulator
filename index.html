@@ -875,6 +875,14 @@ function renderSetup() {
             <label class="mode"><input type="radio" name="mode" id="mode-train" value="train"><span class="t">Allenamento</span><span class="d">${cov ? `Vedi subito se hai risposto giusto, sulle ${cov} domande con risposta salvata.` : "Vedi subito se hai risposto giusto: funziona sulle domande già corrette in una prova precedente."} Senza limite di tempo, con tutte le domande delle lezioni scelte.</span></label>
           </div>
         </fieldset>
+        <fieldset id="kindSet" hidden>
+          <legend>Tipo di domande</legend>
+          <div class="modes three">
+            <label class="mode"><input type="radio" name="kind" value="both" checked><span class="t">Tutte</span><span class="d">Domande a risposta multipla e aperte.</span></label>
+            <label class="mode"><input type="radio" name="kind" value="mc"><span class="t">Solo a risposta multipla</span><span class="d">Per allenarti sulle domande chiuse.</span></label>
+            <label class="mode"><input type="radio" name="kind" value="open"><span class="t">Solo aperte</span><span class="d">Per esercitarti a scrivere le risposte.</span></label>
+          </div>
+        </fieldset>
         ${rev ? `<fieldset>
           <legend>Domande</legend>
           <div class="modes">
@@ -962,6 +970,9 @@ function bindSetup() {
     };
     from.onchange = to.onchange = upd; upd();
   }
+  // the question type is a training option: shown only while «Allenamento» is selected
+  const ks = document.getElementById("kindSet");
+  if (ks) app.querySelectorAll('input[name="mode"]').forEach(r => r.onchange = () => { ks.hidden = !document.getElementById("mode-train").checked; });
   const st = document.getElementById("start");
   if (st) st.onclick = startExam;
 }
@@ -1056,10 +1067,16 @@ function startExam() {
   const review = document.querySelector('input[name="pick"]:checked')?.value === "review";
   const P = pool();
   const F = curFmt();
-  if (review ? !P.review.length : !P.mc.length && !P.op.length) { setupMsg = review ? "Nessuna domanda da ripassare nell'intervallo di lezioni scelto." : "Nessuna domanda nell'intervallo di lezioni scelto."; setupErr = true; renderSetup(); return; }
+  const train = mode === "train";
+  const kind = train ? document.querySelector('input[name="kind"]:checked')?.value || "both" : "both";
+  const fail = msg => { setupMsg = msg; setupErr = true; renderSetup(); };
+  if (review && kind === "open") return fail("Il ripasso errori riguarda solo le domande a risposta multipla: scegli «Tutte» o «Solo a risposta multipla».");
+  if (review ? !P.review.length : !P.mc.length && !P.op.length) return fail(review ? "Nessuna domanda da ripassare nell'intervallo di lezioni scelto." : "Nessuna domanda nell'intervallo di lezioni scelto.");
+  if (!review && kind === "mc" && !P.mc.length) return fail("Nessuna domanda a risposta multipla nell'intervallo di lezioni scelto.");
+  if (!review && kind === "open" && !P.op.length) return fail("Nessuna domanda aperta nell'intervallo di lezioni scelto.");
   // a review run is only the closed questions to review, most-missed first;
-  // training has no score to match the exam, so it takes every question in the chosen lessons
-  const train = mode === "train", nMc = train ? Infinity : F.mc, nOp = train ? Infinity : F.open;
+  // training has no score to match the exam, so it takes every question of the chosen type in the chosen lessons
+  const nMc = !train ? F.mc : kind === "open" ? 0 : Infinity, nOp = !train ? F.open : kind === "mc" ? 0 : Infinity;
   const items = [
     ...(review ? P.review : shuffle(P.mc)).slice(0, nMc).map(q => { const u = uniqOptions(q.options); return { type: "mc", key: qkey(q), topic: q.topic, text: q.text, options: shuffle(u), answer: null, short: u.length < q.options.length ? "dup" : u.length < 4 ? "few" : null }; }),
     ...(review ? [] : shuffle(P.op).slice(0, nOp).map(q => ({ type: "open", key: qkey(q), topic: q.topic, text: q.text, answer: "" }))),
@@ -1067,7 +1084,8 @@ function startExam() {
   if (train) items.forEach(it => { if (it.type !== "mc") return; const k = knownIndex(bank, it); if (k >= 0) { it.known = k; it.knownWhy = bank.answers[it.key].why || ""; } });
   pasteDraft = pasteMsg = copyMsg = "";
   if (F.lode && !review && !train) { const mcs = items.filter(x => x.type === "mc"); if (mcs.length === F.mc) mcs[mcs.length - 1].lode = true; }
-  exam = { course: bank.course || recName(bank), bankId: bank.id, uni: curUni().name, fmt: F, mode, review, started: Date.now(), deadline: mode === "timed" ? Date.now() + F.minutes * 60e3 : null, items, cur: 0, flags: [], submitted: false };
+  const f = document.getElementById("from"), t = document.getElementById("to");
+  exam = { course: bank.course || recName(bank), bankId: bank.id, uni: curUni().name, fmt: F, mode, review, kind, range: f && t ? [f.value, t.value] : null, started: Date.now(), deadline: mode === "timed" ? Date.now() + F.minutes * 60e3 : null, items, cur: 0, flags: [], submitted: false };
   store.set(LS_EXAM, exam);
   getSample(); // resolve early; asks nothing
   renderExam();
@@ -1797,9 +1815,12 @@ function renderResults() {
   app.querySelectorAll("[data-score]").forEach(b => b.onclick = () => { const [i, s] = b.dataset.score.split(":").map(Number); exam.items[i].score = s; save(); renderResults(); });
   const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
   on("again", () => {
-    const m = exam.mode, rv = exam.review; store.del(LS_EXAM); if (!bank) bank = examBank(); renderSetup();
+    const m = exam.mode, rv = exam.review, kind = exam.kind, range = exam.range; store.del(LS_EXAM); if (!bank) bank = examBank(); renderSetup();
     if (!bank) return;
     const r = document.getElementById("mode-" + m); if (r) r.checked = true;
+    const kd = document.querySelector(`input[name="kind"][value="${kind || "both"}"]`); if (kd) kd.checked = true;
+    const f = document.getElementById("from"), t = document.getElementById("to");
+    if (range && f && t && range.every(v => +v < f.options.length)) { f.value = range[0]; t.value = range[1]; }
     const pk = document.querySelector(`input[name="pick"][value="${rv ? "review" : "all"}"]`); if (pk) pk.checked = true;
     startExam();
   });
